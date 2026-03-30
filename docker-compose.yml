@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  myclaw:
+    build: .
+    container_name: myclaw
+    volumes:
+      - ./data:/app/data
+      - ./groups:/app/groups
+      - ./skills:/app/skills
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file: .env
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
