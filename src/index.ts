@@ -11,6 +11,7 @@ import { GroupQueue } from './group-queue.js';
 import { TaskScheduler } from './task-scheduler.js';
 import { IpcWatcher } from './ipc.js';
 import { SkillLoader } from './skills/loader.js';
+import { randomUUID } from 'node:crypto';
 import type { NewMessage, RegisteredGroup } from './types.js';
 
 async function main(): Promise<void> {
@@ -59,7 +60,40 @@ async function main(): Promise<void> {
     });
   }
 
-  // 5. Set up message handling
+  // 5. Bootstrap autonomous loop tasks (if first run)
+  if (db.getAllTasks().length === 0) {
+    logger.info({}, 'No tasks found, bootstrapping autonomous loop');
+    const mainGroup = db.getRegisteredGroups().find((g) => g.is_main);
+    if (mainGroup) {
+      const baseTasks = [
+        { prompt: 'playbook.mdを確認し、今日実行すべきルールを確認してください。中断した作業があれば継続してください。状況をSlackに報告してください。', schedule_value: '0 9 * * 1-5', name: '朝のオペレーション開始' },
+        { prompt: '今日の行動ログ(action-log.md)を振り返り、retrospective.mdにKeep/Problem/Tryを記録してください。playbook.mdの更新が必要か検討し、改善提案があればSlackに共有してください。', schedule_value: '0 18 * * 1-5', name: '日次振り返り' },
+        { prompt: '今週のaction-log.mdとretrospective.mdを分析し、weekly-summary.mdを作成してください。パターンや傾向を特定し、playbook.mdの改善提案をSlackに投稿してください。', schedule_value: '0 17 * * 5', name: '週次まとめ' },
+        { prompt: 'playbook.mdの全ルールを棚卸ししてください。形骸化したルール、矛盾するルール、不足しているルールを特定し、更新案をSlackに提案してください。', schedule_value: '0 10 * * 1', name: '週次playbook見直し' },
+      ];
+      for (const t of baseTasks) {
+        scheduler.createTask({
+          id: randomUUID(),
+          group_folder: mainGroup.folder,
+          chat_jid: '',  // Will use first available channel
+          prompt: t.prompt,
+          script: null,
+          schedule_type: 'cron',
+          schedule_value: t.schedule_value,
+          context_mode: 'group',
+          next_run: null,
+          last_run: null,
+          last_result: null,
+          status: 'active',
+          created_at: new Date().toISOString(),
+        });
+        logger.info({ task: t.name }, 'Autonomous task registered');
+      }
+    }
+  }
+
+  // 6. Set up message handling
+  //    MyClaw monitors Slack continuously — every message triggers agent processing
   const groups = db.getRegisteredGroups();
   const groupMap = new Map<string, RegisteredGroup>(groups.map((g) => [g.folder, g]));
 
@@ -108,10 +142,10 @@ async function main(): Promise<void> {
     });
   }
 
-  // 6. Start IPC watcher
+  // 7. Start IPC watcher
   ipcWatcher.start(config.ipcPollingInterval);
 
-  // 7. Main polling loop for scheduled tasks
+  // 8. Main polling loop — autonomous loop runs forever
   let running = true;
   const pollLoop = async (): Promise<void> => {
     while (running) {
@@ -124,7 +158,7 @@ async function main(): Promise<void> {
     }
   };
 
-  // 8. Graceful shutdown
+  // 9. Graceful shutdown
   let shutdownCount = 0;
   const shutdown = async (): Promise<void> => {
     shutdownCount++;
