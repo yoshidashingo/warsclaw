@@ -137,8 +137,14 @@ export class Database {
       .run(task.id, task.group_folder, task.chat_jid, task.prompt, task.script, task.schedule_type, task.schedule_value, task.context_mode, task.next_run, task.last_run, task.last_result, task.status, task.created_at);
   }
 
+  private static readonly TASK_UPDATABLE_FIELDS = new Set([
+    'prompt', 'script', 'schedule_type', 'schedule_value', 'context_mode',
+    'next_run', 'last_run', 'last_result', 'status',
+  ]);
+
   updateTask(taskId: string, updates: Partial<ScheduledTask>): void {
-    const fields = Object.entries(updates).filter(([, v]) => v !== undefined);
+    const fields = Object.entries(updates)
+      .filter(([k, v]) => v !== undefined && Database.TASK_UPDATABLE_FIELDS.has(k));
     if (fields.length === 0) return;
     const setClause = fields.map(([k]) => `${k} = ?`).join(', ');
     this.db.prepare(`UPDATE scheduled_tasks SET ${setClause} WHERE id = ?`).run(...fields.map(([, v]) => v), taskId);
@@ -151,6 +157,13 @@ export class Database {
   logTaskRun(log: TaskRunLog): void {
     this.db.prepare(`INSERT INTO task_run_logs (task_id, started_at, finished_at, status, result, error) VALUES (?, ?, ?, ?, ?, ?)`)
       .run(log.task_id, log.started_at, log.finished_at, log.status, log.result, log.error);
+    // Retain only last 10k logs
+    this.db.prepare(`DELETE FROM task_run_logs WHERE id NOT IN (SELECT id FROM task_run_logs ORDER BY id DESC LIMIT 10000)`).run();
+  }
+
+  pruneOldMessages(retentionDays = 30): void {
+    const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+    this.db.prepare(`DELETE FROM messages WHERE timestamp < ?`).run(cutoff);
   }
 
   // --- Sessions ---

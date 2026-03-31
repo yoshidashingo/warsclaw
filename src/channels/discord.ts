@@ -1,6 +1,5 @@
 import { Client, GatewayIntentBits, type Message as DiscordMessage } from 'discord.js';
 import type { Channel, ChannelOpts, NewMessage } from '../types.js';
-import { randomUUID } from 'node:crypto';
 
 export function createDiscordChannel(opts: ChannelOpts): Channel | null {
   const token = opts.config.discordBotToken;
@@ -13,9 +12,10 @@ export function createDiscordChannel(opts: ChannelOpts): Channel | null {
   let connected = false;
   let messageCallback: ((msg: NewMessage) => void) | null = null;
   let botUserId: string | null = null;
+  const channelCache = new Map<string, any>();
 
-  client.on('messageCreate', (msg: DiscordMessage) => {
-    if (!messageCallback || msg.author.bot) return;
+  const messageListener = (msg: DiscordMessage): void => {
+    if (!connected || !messageCallback || msg.author.bot) return;
     messageCallback({
       id: msg.id,
       chat_jid: `discord_${msg.channelId}`,
@@ -26,7 +26,9 @@ export function createDiscordChannel(opts: ChannelOpts): Channel | null {
       is_from_me: msg.author.id === botUserId,
       is_bot_message: msg.author.id === botUserId,
     });
-  });
+  };
+
+  client.on('messageCreate', messageListener);
 
   return {
     name: 'discord',
@@ -39,19 +41,23 @@ export function createDiscordChannel(opts: ChannelOpts): Channel | null {
     },
 
     async disconnect() {
-      client.destroy();
       connected = false;
+      client.off('messageCreate', messageListener);
+      channelCache.clear();
+      client.destroy();
     },
 
     isConnected: () => connected,
-
     ownsJid: (jid: string) => jid.startsWith('discord_'),
 
     async sendMessage(jid: string, text: string) {
       const channelId = jid.replace('discord_', '');
-      const channel = await client.channels.fetch(channelId);
+      let channel = channelCache.get(channelId);
+      if (!channel) {
+        channel = await client.channels.fetch(channelId);
+        if (channel) channelCache.set(channelId, channel);
+      }
       if (channel?.isTextBased() && 'send' in channel) {
-        // Split long messages (Discord 2000 char limit)
         for (let i = 0; i < text.length; i += 2000) {
           await channel.send(text.slice(i, i + 2000));
         }

@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, unlinkSync, renameSync, mkdirSync, existsSync } from 'node:fs';
+import { readdirSync, readFileSync, unlinkSync, renameSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { IpcDeps } from './types.js';
 import { IpcMessageSchema, IpcTaskSchema } from './types.js';
@@ -25,23 +25,30 @@ export class IpcWatcher {
   }
 
   private async processDir(dir: string, type: 'message' | 'task'): Promise<void> {
-    if (!existsSync(dir)) return;
-    const files = readdirSync(dir).filter((f) => f.endsWith('.json'));
+    let files: string[];
+    try {
+      files = readdirSync(dir).filter((f) => f.endsWith('.json'));
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return;
+      this.deps.logger.error({ dir, type }, `Failed to read IPC dir: ${(err as Error).message}`);
+      return;
+    }
 
-    for (const file of files) {
-      const filePath = join(dir, file);
-      try {
-        const raw = JSON.parse(readFileSync(filePath, 'utf-8'));
-        if (type === 'message') {
-          await this.handleMessage(raw);
-        } else {
-          await this.handleTask(raw);
-        }
-        unlinkSync(filePath);
-      } catch (err) {
-        this.deps.logger.error({ file, type }, `IPC processing failed: ${(err as Error).message}`);
-        this.quarantine(filePath, file);
+    await Promise.allSettled(files.map((file) => this.processFile(join(dir, file), file, type)));
+  }
+
+  private async processFile(filePath: string, fileName: string, type: 'message' | 'task'): Promise<void> {
+    try {
+      const raw = JSON.parse(readFileSync(filePath, 'utf-8'));
+      if (type === 'message') {
+        await this.handleMessage(raw);
+      } else {
+        await this.handleTask(raw);
       }
+      unlinkSync(filePath);
+    } catch (err) {
+      this.deps.logger.error({ file: fileName, type }, `IPC processing failed: ${(err as Error).message}`);
+      this.quarantine(filePath, fileName);
     }
   }
 

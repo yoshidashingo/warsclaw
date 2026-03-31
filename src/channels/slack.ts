@@ -12,7 +12,7 @@ export function createSlackChannel(opts: ChannelOpts): Channel | null {
   let botUserId: string | null = null;
 
   app.message(async ({ message }) => {
-    if (!messageCallback) return;
+    if (!connected || !messageCallback) return;
     if (!('text' in message) || !('user' in message)) return;
     if (message.subtype) return;
 

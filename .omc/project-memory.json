@@ -148,8 +148,14 @@
   "hotPaths": [
     {
       "path": "src/index.ts",
-      "accessCount": 7,
-      "lastAccessed": 1774937930633,
+      "accessCount": 9,
+      "lastAccessed": 1774956948812,
+      "type": "file"
+    },
+    {
+      "path": "src/config.ts",
+      "accessCount": 5,
+      "lastAccessed": 1774956777952,
       "type": "file"
     },
     {
@@ -186,12 +192,6 @@
       "path": "src/channels/registry.ts",
       "accessCount": 2,
       "lastAccessed": 1774937829391,
-      "type": "file"
-    },
-    {
-      "path": "src/config.ts",
-      "accessCount": 2,
-      "lastAccessed": 1774937829786,
       "type": "file"
     },
     {
@@ -319,6 +319,12 @@
       "accessCount": 1,
       "lastAccessed": 1774956050544,
       "type": "file"
+    },
+    {
+      "path": "src",
+      "accessCount": 1,
+      "lastAccessed": 1774956763414,
+      "type": "directory"
     }
   ],
   "userDirectives": []

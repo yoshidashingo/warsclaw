@@ -47,7 +47,8 @@ async function main(): Promise<void> {
   await registry.connectAll();
 
   // 4. Bootstrap main group if none exist
-  if (db.getRegisteredGroups().length === 0) {
+  let groups = db.getRegisteredGroups();
+  if (groups.length === 0) {
     logger.info({}, 'No groups found, bootstrapping main group');
     db.registerGroup({
       name: 'main',
@@ -63,7 +64,8 @@ async function main(): Promise<void> {
   // 5. Bootstrap autonomous loop tasks (if first run)
   if (db.getAllTasks().length === 0) {
     logger.info({}, 'No tasks found, bootstrapping autonomous loop');
-    const mainGroup = db.getRegisteredGroups().find((g) => g.is_main);
+    groups = db.getRegisteredGroups();
+    const mainGroup = groups.find((g) => g.is_main);
     if (mainGroup) {
       const baseTasks = [
         { prompt: 'playbook.mdを確認し、今日実行すべきルールを確認してください。中断した作業があれば継続してください。状況をSlackに報告してください。', schedule_value: '0 9 * * 1-5', name: '朝のオペレーション開始' },
@@ -94,11 +96,12 @@ async function main(): Promise<void> {
 
   // 6. Set up message handling
   //    MyClaw monitors Slack continuously — every message triggers agent processing
-  const groups = db.getRegisteredGroups();
+  groups = db.getRegisteredGroups();
   const groupMap = new Map<string, RegisteredGroup>(groups.map((g) => [g.folder, g]));
 
   for (const channel of registry.getAll()) {
     channel.onInboundMessage((msg: NewMessage) => {
+      logger.debug({ chatJid: msg.chat_jid, sender: msg.sender, is_from_me: msg.is_from_me }, `Inbound message: ${msg.content.slice(0, 80)}`);
       db.storeMessage(msg);
 
       // Find matching group
@@ -109,7 +112,10 @@ async function main(): Promise<void> {
         return true;
       });
 
+      logger.debug({ group: group?.folder, is_from_me: msg.is_from_me, groupCount: groups.length }, 'Group match result');
+
       if (!group || msg.is_from_me) return;
+      logger.info({ groupFolder: group.folder, chatJid: msg.chat_jid }, 'Enqueuing message for processing');
 
       // Get context messages
       const cursor = router.getCursor(msg.chat_jid);
@@ -147,12 +153,21 @@ async function main(): Promise<void> {
 
   // 8. Main polling loop — autonomous loop runs forever
   let running = true;
+  let lastPrune = 0;
+  const PRUNE_INTERVAL = 24 * 60 * 60 * 1000; // daily
+
   const pollLoop = async (): Promise<void> => {
     while (running) {
       try {
         scheduler.checkDueTasks();
       } catch (err) {
         logger.error({}, `Task check failed: ${(err as Error).message}`);
+      }
+      // Daily message pruning
+      const now = Date.now();
+      if (now - lastPrune > PRUNE_INTERVAL) {
+        db.pruneOldMessages();
+        lastPrune = now;
       }
       await new Promise((r) => setTimeout(r, config.pollingInterval));
     }
