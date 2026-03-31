@@ -1,41 +1,50 @@
-# MyClaw
+<h1 align="center">
+  <img src="docs/icon.png" alt="MyClaw" width="128">
+  <br>
+  MyClaw
+  <br>
+  <br>
+</h1>
 
-The world's smallest [OpenClaw](https://github.com/pjasicek/OpenClaw) / [NanoClaw](https://github.com/nicabar/NanoClaw) clone.
+<p align="center">
+  The world's smallest autonomous operator agent — a persistent, self-improving AI that works on your codebase.
+</p>
 
-**[日本語版 README はこちら](README-ja.md)**
+<p align="center">
+  <img src="https://img.shields.io/badge/node-22%2B-green" alt="node">
+  <img src="https://img.shields.io/badge/typescript-strict-blue" alt="typescript">
+  <img src="https://img.shields.io/badge/core-~1250%20lines-brightgreen" alt="lines">
+  <img src="https://img.shields.io/badge/runtime-Claude%20Code%20CLI-purple" alt="runtime">
+  <img src="https://img.shields.io/badge/isolation-Docker-blue" alt="docker">
+</p>
 
-MyClaw is a persistent, autonomous operator agent. It monitors Slack channels, works on a mounted repository as its workspace, and continuously runs an autonomous improvement loop: **Rule → Execute → Reflect → Propose & Learn**.
+<p align="center">
+  <a href="README.md">English</a> •
+  <a href="README-ja.md">日本語</a>
+</p>
 
-It is not a chatbot. It is an operator that thinks, creates its own rules, executes work, reflects on results, and deepens its understanding — forever.
+## What is MyClaw?
 
-## How It Works
+MyClaw is a **persistent, autonomous operator** that runs forever. It monitors Slack channels, works on a mounted repository, and continuously cycles through a self-improving loop:
 
 ```
-                    ┌─────────────────────────────────────────┐
-                    │          Autonomous Loop (forever)       │
-                    │                                         │
-                    │   playbook.md ──→ Execute ──→ Reflect   │
-                    │        ↑                        ↓       │
-                    │     Propose ←── knowledge.md ←──┘       │
-                    └────────────────────┬────────────────────┘
-                                        │
-Slack ←→ Polling ←→ Group Queue ←→ Docker Container ←→ /workspace/repo
-              ↑                                              ↓
-       Task Scheduler (cron)                         action-log.md
-              ↑                                     retrospective.md
-           SQLite                                    knowledge.md
+    ┌─── Rule ───→ Execute ───→ Reflect ───→ Propose & Learn ───┐
+    └───────────────────────────────────────────────────────────┘
 ```
 
-### The Autonomous Loop
+It is not a chatbot. It is an operator that **creates its own rules, executes work, reflects on results, and deepens its understanding** — all autonomously.
 
-1. **Rule** — MyClaw defines and maintains work rules in `playbook.md`. Rules are born from retrospectives and refined over time.
-2. **Execute** — It executes work in the mounted repository based on playbook rules and Slack instructions. Every action is logged to `action-log.md`.
-3. **Reflect** — After completing work, it performs retrospectives (Keep / Problem / Try) in `retrospective.md`, identifying patterns and root causes.
-4. **Propose & Learn** — It proposes improvements via Slack, updates playbook rules upon approval, and accumulates domain knowledge in `knowledge.md`.
+Inspired by [OpenClaw](https://github.com/pjasicek/OpenClaw) (23+ channels, 92+ plugins, 60k+ LOC) and [NanoClaw](https://github.com/nicabar/NanoClaw) (~3k LOC), MyClaw distills the best patterns from both into **~1250 lines**.
 
-### Built-in Scheduled Tasks
+## Features
 
-On first boot, MyClaw auto-registers four cron tasks to drive the autonomous loop:
+### Autonomous Loop
+- **Playbook-driven** — Self-maintained rules in `playbook.md` that evolve from experience
+- **Action logging** — Every action tracked in `action-log.md` with trigger, action, result, and learnings
+- **Retrospectives** — Automated Keep / Problem / Try analysis in `retrospective.md`
+- **Knowledge accumulation** — Domain knowledge stored in `knowledge.md`
+
+### Scheduled Tasks (auto-registered on first boot)
 
 | Schedule | Task |
 |----------|------|
@@ -44,18 +53,12 @@ On first boot, MyClaw auto-registers four cron tasks to drive the autonomous loo
 | Fridays 17:00 | Weekly summary — pattern identification, improvement proposals |
 | Mondays 10:00 | Playbook review — prune stale rules, identify gaps |
 
-## Features
-
-- **~2000 lines** of core code (the smallest OpenClaw/NanoClaw clone)
-- **Persistent autonomous operator** — runs forever, continuously improving
-- **Slack channel monitoring** — receives human instructions in real time
-- **Repository as workspace** — works directly on your codebase via Docker mount
-- **Action logging** — every action tracked in `action-log.md`
-- **Retrospectives** — automated Keep/Problem/Try after each work session
-- **Playbook-driven** — self-maintained rules that evolve from experience
-- **Claude Code CLI** as agent runtime (runs inside Docker containers)
-- **Per-group isolation** — separate context, memory, and files per Slack channel
-- **SQLite** state management with automatic retention policies
+### Infrastructure
+- **Slack monitoring** — Receives human instructions in real time
+- **Repository workspace** — Works directly on your codebase via Docker mount
+- **Docker isolation** — Each agent runs in an ephemeral container with Claude Code CLI
+- **Per-group isolation** — Separate context, memory, and files per Slack channel
+- **SQLite** state management with automatic retention policies (30-day messages, 10k task logs)
 
 ## Quick Start
 
@@ -63,18 +66,19 @@ On first boot, MyClaw auto-registers four cron tasks to drive the autonomous loo
 
 - Node.js 22+
 - Docker
-- A Slack Bot token ([create one here](https://api.slack.com/apps))
-- An Anthropic API key
+- [Slack Bot token](https://api.slack.com/apps)
+- [Anthropic API key](https://console.anthropic.com/)
 
 ### Setup
 
 ```bash
 # 1. Clone and configure
-git clone <repo> && cd myclaw
+git clone https://github.com/yoshidashingo/myclaw.git && cd myclaw
 cp .env.example .env
 ```
 
 Edit `.env`:
+
 ```bash
 ANTHROPIC_API_KEY=sk-ant-...
 SLACK_BOT_TOKEN=xoxb-...
@@ -105,11 +109,11 @@ docker compose up -d --build
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `ANTHROPIC_API_KEY` | Yes | — | Anthropic API key for Claude |
+| `ANTHROPIC_API_KEY` | Yes | — | Anthropic API key |
 | `SLACK_BOT_TOKEN` | Yes | — | Slack bot token |
 | `SLACK_APP_TOKEN` | Yes | — | Slack app-level token (Socket Mode) |
 | `MYCLAW_WORKSPACE_DIR` | Yes | — | Path to the target repository |
-| `DISCORD_BOT_TOKEN` | No | — | Discord bot token (if using Discord) |
+| `DISCORD_BOT_TOKEN` | No | — | Discord bot token |
 | `MYCLAW_POLLING_INTERVAL` | No | `2000` | Message poll interval (ms) |
 | `MYCLAW_MAX_CONTAINERS` | No | `5` | Max concurrent agent containers |
 | `MYCLAW_TIMEZONE` | No | `UTC` | IANA timezone for cron schedules |
@@ -138,15 +142,17 @@ docker compose up -d --build
 
 ### Data Flow
 
-1. **Slack message** → Polling loop detects new message
-2. **Group matching** → Message matched to registered group by JID
-3. **Queue** → Enqueued in per-group FIFO (max 5 concurrent containers)
-4. **Container** → Docker container spawned with Claude Code CLI
-5. **Workspace** → Agent works in `/workspace/repo` (mounted repository)
-6. **Response** → Output parsed via markers, routed back to Slack
-7. **IPC** → Agent can send follow-up messages or create scheduled tasks via filesystem JSON
+```
+Slack message → Polling → Group match → FIFO queue → Docker container (Claude Code CLI)
+                                                            ↓
+                                                     /workspace/repo
+                                                            ↓
+                                              action-log.md, IPC output
+                                                            ↓
+                                                  Marker-based parse → Slack response
+```
 
-### File Management (per group)
+### Per-Group Files
 
 ```
 groups/{group-name}/
@@ -158,29 +164,22 @@ groups/{group-name}/
 
 ### Security
 
-- Agent containers run with `--rm` (auto-cleanup)
-- Project root mounted read-only; only group folder is writable
+- Containers run with `--rm`, `--memory=512m`, `--cpus=1`
+- Project root is read-only; only the group folder is writable
 - `.env` shadowed to `/dev/null` inside containers
-- Input validation via Zod schemas on all IPC inputs
-- SQL field whitelist prevents injection in dynamic updates
-- Memory and CPU limits per container (512MB / 1 CPU)
+- Zod validation on all IPC inputs
+- SQL field whitelist prevents injection
+- 30-day message retention, 10k task log retention
 
 ## Development
 
 ```bash
-npm run dev          # Watch mode with tsx
-npm run test         # Run tests (Vitest + fast-check PBT)
-npm run typecheck    # TypeScript strict mode check
+npm run dev          # Watch mode (tsx)
+npm run test         # Vitest + fast-check PBT (35 tests)
+npm run typecheck    # TypeScript strict mode
 npm run lint         # ESLint
 npm run format       # Prettier
 ```
-
-## Inspired By
-
-- [OpenClaw](https://github.com/pjasicek/OpenClaw) — Full-featured open-source personal agent (23+ channels, 92+ plugins)
-- [NanoClaw](https://github.com/nicabar/NanoClaw) — Lightweight OpenClaw clone with Docker isolation
-
-MyClaw takes the best patterns from both — NanoClaw's polling architecture and Docker isolation, OpenClaw's channel plugin contract — and distills them into ~2000 lines.
 
 ## License
 

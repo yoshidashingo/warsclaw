@@ -1,39 +1,50 @@
-# MyClaw
+<h1 align="center">
+  <img src="docs/icon.png" alt="MyClaw" width="128">
+  <br>
+  MyClaw
+  <br>
+  <br>
+</h1>
 
-世界でもっとも小さい [OpenClaw](https://github.com/pjasicek/OpenClaw) / [NanoClaw](https://github.com/nicabar/NanoClaw) クローン。
+<p align="center">
+  世界でもっとも小さい自律オペレーターエージェント — コードベース上で永続稼働する自己改善型AI
+</p>
 
-**[English README](README.md)**
+<p align="center">
+  <img src="https://img.shields.io/badge/node-22%2B-green" alt="node">
+  <img src="https://img.shields.io/badge/typescript-strict-blue" alt="typescript">
+  <img src="https://img.shields.io/badge/core-~1250%20lines-brightgreen" alt="lines">
+  <img src="https://img.shields.io/badge/runtime-Claude%20Code%20CLI-purple" alt="runtime">
+  <img src="https://img.shields.io/badge/isolation-Docker-blue" alt="docker">
+</p>
 
-MyClaw は永続稼働する自律オペレーターエージェントです。Slackチャンネルを常時監視し、マウントしたリポジトリを作業スペースとして、**ルール策定→実行→振り返り→提案・理解深化**の自律ループを回し続けます。
+<p align="center">
+  <a href="README.md">English</a> •
+  <a href="README-ja.md">日本語</a>
+</p>
 
-チャットボットではありません。自ら考え、ルールを作り、実行し、振り返り、理解を深め続ける — 永遠に動き続けるオペレーターです。
+## MyClawとは？
 
-## 動作の仕組み
+MyClaw は**永続稼働する自律オペレーター**です。Slackチャンネルを常時監視し、マウントしたリポジトリを作業スペースとして、自己改善ループを回し続けます。
 
 ```
-                    ┌─────────────────────────────────────────┐
-                    │          自律ループ（永続稼働）            │
-                    │                                         │
-                    │   playbook.md ──→ 実行 ──→ 振り返り      │
-                    │        ↑                      ↓         │
-                    │      提案 ←── knowledge.md ←──┘         │
-                    └────────────────────┬────────────────────┘
-                                        │
-Slack ←→ ポーリング ←→ グループキュー ←→ Dockerコンテナ ←→ /workspace/repo
-              ↑                                              ↓
-       タスクスケジューラ (cron)                        action-log.md
-              ↑                                     retrospective.md
-           SQLite                                    knowledge.md
+    ┌─── ルール策定 ───→ 実行 ───→ 振り返り ───→ 提案・理解深化 ───┐
+    └─────────────────────────────────────────────────────────────┘
 ```
 
-### 自律ループの4フェーズ
+チャットボットではありません。**自らルールを作り、作業を実行し、結果を振り返り、理解を深め続ける** — すべてを自律的に行うオペレーターです。
 
-1. **ルール策定 (Rule)** — 作業ルール・手順を `playbook.md` に定義・更新。振り返りから生まれたルールを蓄積。
-2. **実行 (Execute)** — playbook のルールに基づいて作業を実行。Slackからの人間の指示も受け取る。すべての行動を `action-log.md` に記録。
-3. **振り返り (Reflect)** — 実行結果を分析し、`retrospective.md` に Keep / Problem / Try を記録。パターンや傾向を特定。
-4. **提案・理解深化 (Propose & Learn)** — 改善案をSlackで提案。承認されたらplaybookルールを更新。ドメイン知識を `knowledge.md` に蓄積。
+[OpenClaw](https://github.com/pjasicek/OpenClaw)（23以上のチャネル、92以上のプラグイン、60k行以上）と [NanoClaw](https://github.com/nicabar/NanoClaw)（~3k行）の両プロジェクトのベストパターンを **~1250行** に凝縮しています。
 
-### 初回起動時に自動登録される定期タスク
+## 特徴
+
+### 自律ループ
+- **Playbook駆動** — 経験から進化する自己管理型ルール集 `playbook.md`
+- **行動ログ** — すべての行動をトリガー・行動・結果・学びとともに `action-log.md` に記録
+- **振り返り** — Keep / Problem / Try の自動分析を `retrospective.md` に記録
+- **知識蓄積** — ドメイン知識を `knowledge.md` に蓄積
+
+### 定期タスク（初回起動時に自動登録）
 
 | スケジュール | タスク |
 |------------|--------|
@@ -42,18 +53,12 @@ Slack ←→ ポーリング ←→ グループキュー ←→ Dockerコンテ
 | 金曜 17:00 | 週次まとめ — パターン特定、改善提案 |
 | 月曜 10:00 | playbook棚卸し — 形骸化ルールの削除、不足ルールの追加 |
 
-## 特徴
-
-- **~2000行**の極小コードベース（世界最小のOpenClaw/NanoClawクローン）
-- **永続稼働する自律オペレーター** — 起動したら永遠に改善ループを回し続ける
-- **Slackチャンネル常時監視** — 人間の指示をリアルタイムで受け取り作業
-- **リポジトリを作業スペースとしてマウント** — 実際のコードベースで直接作業
-- **行動ログの自動記録** — すべての行動を `action-log.md` に記録
-- **振り返り（レトロスペクティブ）** — 作業後にKeep/Problem/Tryを自動分析
-- **playbook駆動** — 経験から進化する自己管理型ルール集
-- **Claude Code CLI** をエージェントランタイムとして使用（Dockerコンテナ内で実行）
-- **グループ単位の隔離** — Slackチャンネルごとに独立したコンテキスト・メモリ・ファイル
-- **SQLite** による軽量状態管理（自動保持期間ポリシー付き）
+### インフラストラクチャ
+- **Slack常時監視** — 人間の指示をリアルタイムで受信
+- **リポジトリワークスペース** — Dockerマウント経由で実際のコードベース上で作業
+- **Docker隔離** — 各エージェントはClaude Code CLI入りの一時コンテナで実行
+- **グループ単位隔離** — Slackチャンネルごとに独立したコンテキスト・メモリ・ファイル
+- **SQLite** 状態管理（自動保持ポリシー: メッセージ30日、タスクログ10k件）
 
 ## クイックスタート
 
@@ -61,18 +66,19 @@ Slack ←→ ポーリング ←→ グループキュー ←→ Dockerコンテ
 
 - Node.js 22+
 - Docker
-- Slack Botトークン（[こちらで作成](https://api.slack.com/apps)）
-- Anthropic APIキー
+- [Slack Botトークン](https://api.slack.com/apps)
+- [Anthropic APIキー](https://console.anthropic.com/)
 
 ### セットアップ
 
 ```bash
 # 1. クローンと設定
-git clone <repo> && cd myclaw
+git clone https://github.com/yoshidashingo/myclaw.git && cd myclaw
 cp .env.example .env
 ```
 
 `.env` を編集:
+
 ```bash
 ANTHROPIC_API_KEY=sk-ant-...
 SLACK_BOT_TOKEN=xoxb-...
@@ -107,7 +113,7 @@ docker compose up -d --build
 | `SLACK_BOT_TOKEN` | Yes | — | Slack Botトークン |
 | `SLACK_APP_TOKEN` | Yes | — | Slackアプリレベルトークン (Socket Mode) |
 | `MYCLAW_WORKSPACE_DIR` | Yes | — | 作業対象リポジトリのパス |
-| `DISCORD_BOT_TOKEN` | No | — | Discord Botトークン（Discord使用時） |
+| `DISCORD_BOT_TOKEN` | No | — | Discord Botトークン |
 | `MYCLAW_POLLING_INTERVAL` | No | `2000` | メッセージポーリング間隔 (ms) |
 | `MYCLAW_MAX_CONTAINERS` | No | `5` | 最大同時実行コンテナ数 |
 | `MYCLAW_TIMEZONE` | No | `UTC` | IANAタイムゾーン |
@@ -136,15 +142,17 @@ docker compose up -d --build
 
 ### データフロー
 
-1. **Slackメッセージ** → ポーリングループが新着メッセージを検出
-2. **グループマッチング** → JIDに基づいて登録済みグループにマッチ
-3. **キュー** → グループ単位FIFOにエンキュー（最大5コンテナ並行）
-4. **コンテナ** → Claude Code CLI入りDockerコンテナを起動
-5. **作業スペース** → エージェントが `/workspace/repo`（マウント済みリポ）で作業
-6. **レスポンス** → マーカーで出力をパース、Slackにルーティング
-7. **IPC** → エージェントはファイルシステムJSON経由でフォローアップメッセージやタスク作成が可能
+```
+Slackメッセージ → ポーリング → グループマッチ → FIFOキュー → Dockerコンテナ (Claude Code CLI)
+                                                                    ↓
+                                                             /workspace/repo
+                                                                    ↓
+                                                      action-log.md, IPC出力
+                                                                    ↓
+                                                      マーカーベースパース → Slackレスポンス
+```
 
-### ファイル管理（グループごと）
+### グループごとのファイル管理
 
 ```
 groups/{グループ名}/
@@ -156,29 +164,22 @@ groups/{グループ名}/
 
 ### セキュリティ
 
-- エージェントコンテナは `--rm` で自動クリーンアップ
-- プロジェクトルートは読み取り専用マウント、グループフォルダのみ書き込み可能
+- コンテナは `--rm`, `--memory=512m`, `--cpus=1` で実行
+- プロジェクトルートは読み取り専用、グループフォルダのみ書き込み可能
 - `.env` はコンテナ内で `/dev/null` にシャドウイング
 - Zodスキーマで全IPC入力をバリデーション
 - SQLフィールドホワイトリストでインジェクション防止
-- コンテナごとのメモリ・CPU制限 (512MB / 1 CPU)
+- メッセージ30日保持、タスクログ10k件保持
 
 ## 開発
 
 ```bash
-npm run dev          # tsx ウォッチモード
-npm run test         # テスト実行 (Vitest + fast-check PBT)
-npm run typecheck    # TypeScript strict mode チェック
+npm run dev          # ウォッチモード (tsx)
+npm run test         # Vitest + fast-check PBT (35テスト)
+npm run typecheck    # TypeScript strict mode
 npm run lint         # ESLint
 npm run format       # Prettier
 ```
-
-## 参考プロジェクト
-
-- [OpenClaw](https://github.com/pjasicek/OpenClaw) — フル機能のオープンソースパーソナルエージェント（23以上のチャネル、92以上のプラグイン）
-- [NanoClaw](https://github.com/nicabar/NanoClaw) — OpenClawの軽量版クローン（Docker隔離）
-
-MyClaw は両プロジェクトのベストパターン — NanoClawのポーリングアーキテクチャとDocker隔離、OpenClawのチャネルプラグインコントラクト — を取り込み、~2000行に凝縮しています。
 
 ## ライセンス
 
