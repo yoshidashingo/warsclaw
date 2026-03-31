@@ -39,8 +39,14 @@ export class ContainerRunner {
       '-v', '/dev/null:/workspace/.env:ro',
       '-e', `ANTHROPIC_API_KEY=${this.config.anthropicApiKey}`,
       '--memory=512m', '--cpus=1',
-      '-i', this.config.dockerImage,
     ];
+
+    // Mount workspace repository (the target repo to work on)
+    if (this.config.workspaceDir) {
+      args.push('-v', `${this.config.workspaceDir}:/workspace/repo:rw`);
+    }
+
+    args.push('-i', this.config.dockerImage);
 
     return new Promise<ContainerOutput>((resolveP, reject) => {
       const proc = spawn('docker', args, { stdio: ['pipe', 'pipe', 'pipe'] });

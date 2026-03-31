@@ -9,6 +9,7 @@ services:
       - ./groups:/app/groups
       - ./skills:/app/skills
       - /var/run/docker.sock:/var/run/docker.sock
+      - ${MYCLAW_WORKSPACE_DIR:-.}:/app/workspace-repo
     env_file: .env
     restart: unless-stopped
     logging:

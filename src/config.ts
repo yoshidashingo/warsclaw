@@ -14,6 +14,7 @@ export class Config {
   readonly dockerImage: string;
   readonly assistantName: string;
   readonly logLevel: string;
+  readonly workspaceDir: string;
   readonly discordBotToken: string | undefined;
   readonly slackBotToken: string | undefined;
   readonly slackAppToken: string | undefined;
@@ -32,6 +33,7 @@ export class Config {
     this.dockerImage = env.MYCLAW_DOCKER_IMAGE ?? 'myclaw-agent';
     this.assistantName = env.MYCLAW_ASSISTANT_NAME ?? 'MyClaw';
     this.logLevel = env.MYCLAW_LOG_LEVEL ?? 'info';
+    this.workspaceDir = resolve(env.MYCLAW_WORKSPACE_DIR ?? '');
     this.discordBotToken = env.DISCORD_BOT_TOKEN || undefined;
     this.slackBotToken = env.SLACK_BOT_TOKEN || undefined;
     this.slackAppToken = env.SLACK_APP_TOKEN || undefined;

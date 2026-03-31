@@ -44,7 +44,10 @@ async function main(): Promise<void> {
     return;
   }
 
-  const workDir = `/workspace/groups/${input.groupFolder}`;
+  // Use mounted repo as primary working directory, fall back to group folder
+  const { existsSync } = await import('node:fs');
+  const repoDir = '/workspace/repo';
+  const workDir = existsSync(repoDir) ? repoDir : `/workspace/groups/${input.groupFolder}`;
 
   try {
     // Build claude command

@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"docker build -t myclaw-agent -f container/Dockerfile container/ 2>&1\",\"timeout\":300000,\"description\":\"Build Docker agent image\"}",
+  "error": "Exit code 1\nERROR: Cannot connect to the Docker daemon at unix:///Users/shingo/.docker/run/docker.sock. Is the docker daemon running?",
+  "timestamp": "2026-03-31T11:20:55.799Z",
+  "retry_count": 1
+}

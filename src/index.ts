@@ -45,7 +45,21 @@ async function main(): Promise<void> {
   registry.initialize({ config, db, logger });
   await registry.connectAll();
 
-  // 4. Set up message handling
+  // 4. Bootstrap main group if none exist
+  if (db.getRegisteredGroups().length === 0) {
+    logger.info({}, 'No groups found, bootstrapping main group');
+    db.registerGroup({
+      name: 'main',
+      folder: 'main',
+      trigger: config.assistantName,
+      added_at: new Date().toISOString(),
+      is_main: true,
+      requires_trigger: false,
+      timeout: 300,
+    });
+  }
+
+  // 5. Set up message handling
   const groups = db.getRegisteredGroups();
   const groupMap = new Map<string, RegisteredGroup>(groups.map((g) => [g.folder, g]));
 
@@ -94,10 +108,10 @@ async function main(): Promise<void> {
     });
   }
 
-  // 5. Start IPC watcher
+  // 6. Start IPC watcher
   ipcWatcher.start(config.ipcPollingInterval);
 
-  // 6. Main polling loop for scheduled tasks
+  // 7. Main polling loop for scheduled tasks
   let running = true;
   const pollLoop = async (): Promise<void> => {
     while (running) {
@@ -110,7 +124,7 @@ async function main(): Promise<void> {
     }
   };
 
-  // 7. Graceful shutdown
+  // 8. Graceful shutdown
   let shutdownCount = 0;
   const shutdown = async (): Promise<void> => {
     shutdownCount++;

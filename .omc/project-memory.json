@@ -1,0 +1,325 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1774883837946,
+  "projectRoot": "/Users/shingo/Documents/GitHub/myclaw",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": ">=22.0.0",
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      },
+      {
+        "name": "TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "tsconfig.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "vitest",
+        "version": "3.0.0",
+        "category": "testing"
+      }
+    ],
+    "packageManager": "npm",
+    "runtime": "Node.js 22.0.0"
+  },
+  "build": {
+    "buildCommand": "npm run build",
+    "testCommand": "npm test",
+    "lintCommand": "npm run lint",
+    "devCommand": "npm run dev",
+    "scripts": {
+      "build": "tsc",
+      "dev": "tsx watch src/index.ts",
+      "start": "node dist/index.js",
+      "test": "vitest run",
+      "test:watch": "vitest",
+      "lint": "eslint src/",
+      "format": "prettier --write 'src/**/*.ts'",
+      "typecheck": "tsc --noEmit",
+      "prepare": "husky"
+    }
+  },
+  "conventions": {
+    "namingStyle": "camelCase/PascalCase",
+    "importStyle": "ES modules",
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "src"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "aidlc-docs": {
+      "path": "aidlc-docs",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1774883837936,
+      "keyFiles": [
+        "aidlc-state.md",
+        "audit.md"
+      ]
+    },
+    "container": {
+      "path": "container",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1774883837936,
+      "keyFiles": [
+        "Dockerfile"
+      ]
+    },
+    "data": {
+      "path": "data",
+      "purpose": "Data files",
+      "fileCount": 0,
+      "lastAccessed": 1774883837938,
+      "keyFiles": []
+    },
+    "dist": {
+      "path": "dist",
+      "purpose": "Distribution/build output",
+      "fileCount": 40,
+      "lastAccessed": 1774883837938,
+      "keyFiles": [
+        "config.d.ts",
+        "config.d.ts.map",
+        "config.js",
+        "config.js.map",
+        "container-runner.d.ts"
+      ]
+    },
+    "groups": {
+      "path": "groups",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1774883837939,
+      "keyFiles": []
+    },
+    "skills": {
+      "path": "skills",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1774883837939,
+      "keyFiles": []
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 10,
+      "lastAccessed": 1774883837939,
+      "keyFiles": [
+        "config.ts",
+        "container-runner.ts",
+        "db.ts",
+        "group-queue.ts",
+        "index.ts"
+      ]
+    },
+    "src/__tests__": {
+      "path": "src/__tests__",
+      "purpose": "Test files",
+      "fileCount": 5,
+      "lastAccessed": 1774883837939,
+      "keyFiles": [
+        "container-runner.test.ts",
+        "db.test.ts",
+        "group-queue.test.ts"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "src/index.ts",
+      "accessCount": 7,
+      "lastAccessed": 1774937930633,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 2,
+      "lastAccessed": 1774937817802,
+      "type": "file"
+    },
+    {
+      "path": "CLAUDE.md",
+      "accessCount": 2,
+      "lastAccessed": 1774937820551,
+      "type": "file"
+    },
+    {
+      "path": ".env.example",
+      "accessCount": 2,
+      "lastAccessed": 1774937821026,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 2,
+      "lastAccessed": 1774937821466,
+      "type": "file"
+    },
+    {
+      "path": "src/channels/slack.ts",
+      "accessCount": 2,
+      "lastAccessed": 1774937828963,
+      "type": "file"
+    },
+    {
+      "path": "src/channels/registry.ts",
+      "accessCount": 2,
+      "lastAccessed": 1774937829391,
+      "type": "file"
+    },
+    {
+      "path": "src/config.ts",
+      "accessCount": 2,
+      "lastAccessed": 1774937829786,
+      "type": "file"
+    },
+    {
+      "path": "src/types.ts",
+      "accessCount": 2,
+      "lastAccessed": 1774937830596,
+      "type": "file"
+    },
+    {
+      "path": "src/db.ts",
+      "accessCount": 2,
+      "lastAccessed": 1774937837794,
+      "type": "file"
+    },
+    {
+      "path": "src/router.ts",
+      "accessCount": 2,
+      "lastAccessed": 1774937838221,
+      "type": "file"
+    },
+    {
+      "path": "groups/main/CLAUDE.md",
+      "accessCount": 2,
+      "lastAccessed": 1774937838898,
+      "type": "file"
+    },
+    {
+      "path": "groups/global/CLAUDE.md",
+      "accessCount": 2,
+      "lastAccessed": 1774937839457,
+      "type": "file"
+    },
+    {
+      "path": ".env",
+      "accessCount": 2,
+      "lastAccessed": 1774955974505,
+      "type": "file"
+    },
+    {
+      "path": "Dockerfile",
+      "accessCount": 2,
+      "lastAccessed": 1774956038920,
+      "type": "file"
+    },
+    {
+      "path": "container/Dockerfile",
+      "accessCount": 2,
+      "lastAccessed": 1774956039386,
+      "type": "file"
+    },
+    {
+      "path": "container/agent-runner/src/index.ts",
+      "accessCount": 2,
+      "lastAccessed": 1774956050730,
+      "type": "file"
+    },
+    {
+      "path": "tsconfig.json",
+      "accessCount": 1,
+      "lastAccessed": 1774883862082,
+      "type": "file"
+    },
+    {
+      "path": "vitest.config.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774883867101,
+      "type": "file"
+    },
+    {
+      "path": "docker-compose.yml",
+      "accessCount": 1,
+      "lastAccessed": 1774883868174,
+      "type": "file"
+    },
+    {
+      "path": "src/logger.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774883873336,
+      "type": "file"
+    },
+    {
+      "path": "src/container-runner.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774883873647,
+      "type": "file"
+    },
+    {
+      "path": "src/group-queue.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774883879494,
+      "type": "file"
+    },
+    {
+      "path": "src/task-scheduler.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774883879942,
+      "type": "file"
+    },
+    {
+      "path": "src/ipc.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774883880403,
+      "type": "file"
+    },
+    {
+      "path": "src/channels/discord.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774883881285,
+      "type": "file"
+    },
+    {
+      "path": "src/skills/loader.ts",
+      "accessCount": 1,
+      "lastAccessed": 1774883882318,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 1,
+      "lastAccessed": 1774883904350,
+      "type": "directory"
+    },
+    {
+      "path": "container/agent-runner/package.json",
+      "accessCount": 1,
+      "lastAccessed": 1774956050544,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}
