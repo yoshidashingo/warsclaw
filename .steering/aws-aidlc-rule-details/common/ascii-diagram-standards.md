@@ -113,4 +113,3 @@ Before creating diagrams:
 ## Alternative
 
 For complex diagrams, use Mermaid (see `content-validation.md`)
-
