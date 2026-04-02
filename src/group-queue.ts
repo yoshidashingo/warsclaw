@@ -2,6 +2,8 @@ import type { ContainerRunner } from './container-runner.js';
 import type { Logger } from './logger.js';
 import type { QueueTask } from './types.js';
 
+const MAX_QUEUE_DEPTH = 20;
+
 function getBackoffMs(retryCount: number): number {
   return 5000 * Math.pow(2, retryCount - 1);
 }
@@ -23,7 +25,12 @@ export class GroupQueue {
     if (!this.accepting) return;
     const group = task.groupFolder;
     if (!this.queues.has(group)) this.queues.set(group, []);
-    this.queues.get(group)!.push(task);
+    const queue = this.queues.get(group)!;
+    if (queue.length >= MAX_QUEUE_DEPTH) {
+      task.onError(new Error(`Queue full for group ${group} (max=${MAX_QUEUE_DEPTH})`));
+      return;
+    }
+    queue.push(task);
     this.processNext();
   }
 
@@ -41,44 +48,59 @@ export class GroupQueue {
     return total;
   }
 
-  async shutdown(): Promise<void> {
+  async shutdown(timeoutMs = 30_000): Promise<void> {
     this.accepting = false;
-    // Wait for active containers to finish
-    while (this.activeCount > 0) {
+    const dropped = this.getTotalQueued();
+    if (dropped > 0) {
+      this.logger.warn({}, `Shutdown: dropping ${dropped} queued task(s)`);
+    }
+    const deadline = Date.now() + timeoutMs;
+    while (this.activeCount > 0 && Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, 500));
+    }
+    if (this.activeCount > 0) {
+      this.logger.warn({}, `Shutdown timeout: force-killing ${this.activeCount} active container(s)`);
+      for (const group of this.activeGroups) {
+        this.runner.killGroup(group);
+      }
     }
   }
 
   private processNext(): void {
     if (this.activeCount >= this.maxConcurrent) return;
-
-    // Find a group with pending tasks that doesn't have an active container
     for (const [group, queue] of this.queues) {
       if (queue.length === 0 || this.activeGroups.has(group)) continue;
       const task = queue.shift()!;
       this.activeGroups.add(group);
       this.activeCount++;
-      this.executeWithRetry(task, 0);
+      this.executeWithRetry(task);
       if (this.activeCount >= this.maxConcurrent) break;
     }
   }
 
-  private async executeWithRetry(task: QueueTask, attempt: number): Promise<void> {
+  private async executeWithRetry(task: QueueTask): Promise<void> {
     const group = task.groupFolder;
     try {
-      const output = await this.runner.run(task.input);
-      await task.onComplete(output);
-    } catch (err) {
-      const error = err as Error;
-      if (attempt < this.maxRetries) {
-        const backoff = getBackoffMs(attempt + 1);
-        this.logger.warn({ groupFolder: group, attempt: attempt + 1, backoffMs: backoff }, `Container failed, retrying: ${error.message}`);
-        await new Promise((r) => setTimeout(r, backoff));
-        await this.executeWithRetry(task, attempt + 1);
-        return;
+      for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+        try {
+          const output = await this.runner.run(task.input);
+          try {
+            await task.onComplete(output);
+          } catch (cbErr) {
+            this.logger.error({ groupFolder: group }, `onComplete callback failed: ${(cbErr as Error).message}`);
+          }
+          return;
+        } catch (err) {
+          if (attempt >= this.maxRetries) {
+            this.logger.error({ groupFolder: group, attempts: attempt + 1 }, `Container failed after max retries: ${(err as Error).message}`);
+            task.onError(err as Error);
+            return;
+          }
+          const backoff = getBackoffMs(attempt + 1);
+          this.logger.warn({ groupFolder: group, attempt: attempt + 1, backoffMs: backoff }, `Container failed, retrying: ${(err as Error).message}`);
+          await new Promise((r) => setTimeout(r, backoff));
+        }
       }
-      this.logger.error({ groupFolder: group, attempts: attempt + 1 }, `Container failed after max retries: ${error.message}`);
-      task.onError(error);
     } finally {
       this.activeGroups.delete(group);
       this.activeCount--;

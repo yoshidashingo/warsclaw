@@ -17,7 +17,8 @@ import type { NewMessage, RegisteredGroup } from './types.js';
 async function main(): Promise<void> {
   // 1. Initialize core
   const config = Config.fromEnv();
-  const logger = new Logger(config.logLevel as any);
+  const logLevel = (['debug', 'info', 'warn', 'error'].includes(config.logLevel) ? config.logLevel : 'info') as 'debug' | 'info' | 'warn' | 'error';
+  const logger = new Logger(logLevel);
   logger.info({}, `MyClaw starting (polling=${config.pollingInterval}ms, maxContainers=${config.maxConcurrentContainers})`);
 
   // Ensure directories
@@ -97,8 +98,6 @@ async function main(): Promise<void> {
   // 6. Set up message handling
   //    MyClaw monitors Slack continuously — every message triggers agent processing
   groups = db.getRegisteredGroups();
-  const groupMap = new Map<string, RegisteredGroup>(groups.map((g) => [g.folder, g]));
-
   for (const channel of registry.getAll()) {
     channel.onInboundMessage((msg: NewMessage) => {
       logger.debug({ chatJid: msg.chat_jid, sender: msg.sender, is_from_me: msg.is_from_me }, `Inbound message: ${msg.content.slice(0, 80)}`);
@@ -134,6 +133,7 @@ async function main(): Promise<void> {
           isMain: group.is_main,
           isScheduledTask: false,
           assistantName: config.assistantName,
+          timeout: group.timeout,
         },
         onComplete: async (output) => {
           if (output.newSessionId) db.saveSession(group.folder, output.newSessionId);
@@ -160,6 +160,8 @@ async function main(): Promise<void> {
     while (running) {
       try {
         scheduler.checkDueTasks();
+        // Refresh groups for dynamic registration
+        groups = db.getRegisteredGroups();
       } catch (err) {
         logger.error({}, `Task check failed: ${(err as Error).message}`);
       }

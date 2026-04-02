@@ -66,8 +66,20 @@ describe('IpcTaskSchema', () => {
       schedule_type: 'cron',
       schedule_value: '* * * * *',
       targetJid: 'discord_123',
+      group_folder: 'dev-team',
     });
     expect(result.success).toBe(true);
+  });
+
+  it('rejects schedule_task without group_folder', () => {
+    const result = IpcTaskSchema.safeParse({
+      type: 'schedule_task',
+      prompt: 'test',
+      schedule_type: 'cron',
+      schedule_value: '* * * * *',
+      targetJid: 'discord_123',
+    });
+    expect(result.success).toBe(false);
   });
 
   it('accepts pause_task', () => {
