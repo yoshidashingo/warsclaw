@@ -37,7 +37,11 @@ export class Config {
     this.discordBotToken = env.DISCORD_BOT_TOKEN || undefined;
     this.slackBotToken = env.SLACK_BOT_TOKEN || undefined;
     this.slackAppToken = env.SLACK_APP_TOKEN || undefined;
-    this.anthropicApiKey = env.ANTHROPIC_API_KEY ?? '';
+    const apiKey = env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      throw new Error('ANTHROPIC_API_KEY is required. Set it in .env or as an environment variable.');
+    }
+    this.anthropicApiKey = apiKey;
   }
 
   static fromEnv(): Config {
@@ -49,7 +53,11 @@ export class Config {
         const eqIdx = trimmed.indexOf('=');
         if (eqIdx === -1) continue;
         const key = trimmed.slice(0, eqIdx).trim();
-        const value = trimmed.slice(eqIdx + 1).trim();
+        let value = trimmed.slice(eqIdx + 1).trim();
+        // Strip surrounding quotes
+        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+          value = value.slice(1, -1);
+        }
         if (!process.env[key]) process.env[key] = value;
       }
     }

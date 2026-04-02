@@ -1,48 +1,35 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import * as fc from 'fast-check';
-import { CronExpressionParser } from 'cron-parser';
+import { TaskScheduler } from '../task-scheduler.js';
 
-// Test computeNextRun logic directly
-function computeNextRun(scheduleType: string, scheduleValue: string, lastRun: string | null, tz = 'UTC'): string | null {
-  switch (scheduleType) {
-    case 'cron': {
-      const interval = CronExpressionParser.parse(scheduleValue, { tz });
-      return interval.next().toISOString();
-    }
-    case 'interval': {
-      const ms = parseInt(scheduleValue, 10);
-      const base = lastRun ? new Date(lastRun).getTime() : Date.now();
-      return new Date(base + ms).toISOString();
-    }
-    case 'once': {
-      if (lastRun) return null;
-      return scheduleValue;
-    }
-    default:
-      return null;
-  }
+function createScheduler(): TaskScheduler {
+  const mockDb = { getDueTasks: vi.fn(() => []), createTask: vi.fn(), updateTask: vi.fn(), deleteTask: vi.fn(), logTaskRun: vi.fn() };
+  const mockQueue = { enqueue: vi.fn() };
+  const mockLogger = { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+  return new TaskScheduler(mockDb as any, mockQueue as any, mockLogger as any, 'UTC');
 }
 
-describe('computeNextRun', () => {
+describe('TaskScheduler.computeNextRun', () => {
+  const scheduler = createScheduler();
+
   it('computes cron next run', () => {
-    const next = computeNextRun('cron', '*/5 * * * *', null);
+    const next = scheduler.computeNextRun({ schedule_type: 'cron', schedule_value: '*/5 * * * *', last_run: null });
     expect(next).toBeTruthy();
     expect(new Date(next!).getTime()).toBeGreaterThan(Date.now() - 1000);
   });
 
   it('computes interval next run from last_run', () => {
-    const lastRun = '2026-01-01T00:00:00.000Z';
-    const next = computeNextRun('interval', '60000', lastRun);
+    const next = scheduler.computeNextRun({ schedule_type: 'interval', schedule_value: '60000', last_run: '2026-01-01T00:00:00.000Z' });
     expect(next).toBe('2026-01-01T00:01:00.000Z');
   });
 
   it('returns schedule_value for once (not yet run)', () => {
-    const next = computeNextRun('once', '2026-12-31T00:00:00Z', null);
+    const next = scheduler.computeNextRun({ schedule_type: 'once', schedule_value: '2026-12-31T00:00:00Z', last_run: null });
     expect(next).toBe('2026-12-31T00:00:00Z');
   });
 
   it('returns null for once (already run)', () => {
-    const next = computeNextRun('once', '2026-12-31T00:00:00Z', '2026-12-31T00:00:01Z');
+    const next = scheduler.computeNextRun({ schedule_type: 'once', schedule_value: '2026-12-31T00:00:00Z', last_run: '2026-12-31T00:00:01Z' });
     expect(next).toBeNull();
   });
 
@@ -53,7 +40,7 @@ describe('computeNextRun', () => {
         fc.date({ min: new Date('2020-01-01'), max: new Date('2030-01-01') }),
         (intervalMs, lastRunDate) => {
           const lastRun = lastRunDate.toISOString();
-          const next = computeNextRun('interval', String(intervalMs), lastRun);
+          const next = scheduler.computeNextRun({ schedule_type: 'interval', schedule_value: String(intervalMs), last_run: lastRun });
           expect(next).toBeTruthy();
           expect(new Date(next!).getTime()).toBe(lastRunDate.getTime() + intervalMs);
         },
@@ -65,9 +52,8 @@ describe('computeNextRun', () => {
     const cronExprs = ['* * * * *', '*/5 * * * *', '0 * * * *', '0 0 * * *', '0 0 * * 1'];
     fc.assert(
       fc.property(fc.constantFrom(...cronExprs), (expr) => {
-        const next = computeNextRun('cron', expr, null);
+        const next = scheduler.computeNextRun({ schedule_type: 'cron', schedule_value: expr, last_run: null });
         expect(next).toBeTruthy();
-        // cron next should be in the future (within 1 day tolerance)
         const nextTime = new Date(next!).getTime();
         expect(nextTime).toBeGreaterThan(Date.now() - 1000);
       }),

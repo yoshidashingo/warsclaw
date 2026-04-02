@@ -44,7 +44,7 @@ export function createDiscordChannel(opts: ChannelOpts): Channel | null {
       connected = false;
       client.off('messageCreate', messageListener);
       channelCache.clear();
-      client.destroy();
+      await client.destroy();
     },
 
     isConnected: () => connected,

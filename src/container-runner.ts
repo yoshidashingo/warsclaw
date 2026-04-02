@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { resolve } from 'node:path';
+import { resolve, join } from 'node:path';
 import type { Config } from './config.js';
 import type { Logger } from './logger.js';
 import type { ContainerInput, ContainerOutput } from './types.js';
@@ -27,21 +27,34 @@ export class ContainerRunner {
   ) {}
 
   async run(input: ContainerInput): Promise<ContainerOutput> {
-    const projectRoot = resolve('.');
     const groupFolder = resolve(this.config.groupsDir, input.groupFolder);
     const ipcDir = resolve(this.config.ipcDir);
 
+    // Write API key to temp env-file (not visible in docker inspect)
+    const { mkdtempSync, writeFileSync, unlinkSync: unlinkTmp, rmdirSync } = await import('node:fs');
+    const { tmpdir } = await import('node:os');
+    const envDir = mkdtempSync(join(tmpdir(), 'myclaw-env-'));
+    const envFile = join(envDir, '.env');
+    writeFileSync(envFile, `ANTHROPIC_API_KEY=${this.config.anthropicApiKey}\n`, { mode: 0o600 });
+
+    const timeoutSec = input.timeout ?? (input.isScheduledTask ? 600 : 300);
+
     const args = [
       'run', '--rm',
-      '-v', `${projectRoot}:/workspace:ro`,
-      '-v', `${groupFolder}:/workspace/groups/${input.groupFolder}:rw`,
-      '-v', `${ipcDir}:/workspace/ipc:rw`,
-      '-v', '/dev/null:/workspace/.env:ro',
-      '-e', `ANTHROPIC_API_KEY=${this.config.anthropicApiKey}`,
+      // Security hardening
+      '--network=none',
+      '--no-new-privileges',
+      '--cap-drop', 'ALL',
+      '--pids-limit', '100',
+      // Resource limits
       '--memory=512m', '--cpus=1',
+      // Volumes: only group folder (rw), IPC (ro)
+      '-v', `${groupFolder}:/workspace/groups/${input.groupFolder}:rw`,
+      '-v', `${ipcDir}:/workspace/ipc:ro`,
+      // API key via env-file
+      '--env-file', envFile,
     ];
 
-    // Mount workspace repository (the target repo to work on)
     if (this.config.workspaceDir) {
       args.push('-v', `${this.config.workspaceDir}:/workspace/repo:rw`);
     }
@@ -56,23 +69,26 @@ export class ContainerRunner {
       let stderr = '';
       const timeout = setTimeout(() => {
         proc.kill('SIGTERM');
-        reject(new Error(`Container timeout after ${input.isScheduledTask ? 600 : 300}s`));
-      }, (input.isScheduledTask ? 600 : 300) * 1000);
+        reject(new Error(`Container timeout after ${timeoutSec}s`));
+      }, timeoutSec * 1000);
 
       proc.stdout?.on('data', (chunk: Buffer) => { stdout += chunk.toString(); });
       proc.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
 
-      proc.on('close', (code) => {
+      const cleanup = (): void => {
         clearTimeout(timeout);
         this.activeProcesses.delete(input.groupFolder);
+        try { unlinkTmp(envFile); } catch { /* ignore */ }
+        try { rmdirSync(envDir); } catch { /* ignore */ }
+      };
 
+      proc.on('close', (code) => {
+        cleanup();
         if (stderr) this.logger.debug({ groupFolder: input.groupFolder }, `Container stderr: ${stderr.slice(0, 500)}`);
-
         if (code !== 0) {
           reject(new Error(`Container exited with code ${code}: ${stderr.slice(0, 500)}`));
           return;
         }
-
         try {
           resolveP(parseContainerOutput(stdout));
         } catch (err) {
@@ -81,12 +97,10 @@ export class ContainerRunner {
       });
 
       proc.on('error', (err) => {
-        clearTimeout(timeout);
-        this.activeProcesses.delete(input.groupFolder);
+        cleanup();
         reject(err);
       });
 
-      // Send input via stdin
       proc.stdin?.write(JSON.stringify(input));
       proc.stdin?.end();
     });

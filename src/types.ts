@@ -47,6 +47,7 @@ export interface ContainerInput {
   isScheduledTask: boolean;
   assistantName: string;
   script?: string;
+  timeout?: number;
 }
 
 export interface ContainerOutput {
@@ -143,6 +144,7 @@ export const IpcTaskSchema = z.discriminatedUnion('type', [
     schedule_type: z.enum(['cron', 'interval', 'once']),
     schedule_value: z.string().min(1),
     targetJid: z.string().min(1),
+    group_folder: GroupFolderSchema,
     script: z.string().optional(),
     context_mode: z.enum(['group', 'isolated']).default('group'),
   }),

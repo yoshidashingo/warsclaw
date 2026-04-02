@@ -5,18 +5,29 @@ import { IpcMessageSchema, IpcTaskSchema } from './types.js';
 import { randomUUID } from 'node:crypto';
 
 export class IpcWatcher {
-  private timer: ReturnType<typeof setInterval> | null = null;
+  private timer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private readonly deps: IpcDeps) {}
 
   start(intervalMs: number): void {
     this.ensureDirs();
-    this.timer = setInterval(() => this.processFiles(), intervalMs);
+    this.scheduleNext(intervalMs);
   }
 
   stop(): void {
-    if (this.timer) clearInterval(this.timer);
+    if (this.timer) clearTimeout(this.timer);
     this.timer = null;
+  }
+
+  private scheduleNext(intervalMs: number): void {
+    this.timer = setTimeout(async () => {
+      try {
+        await this.processFiles();
+      } catch (err) {
+        this.deps.logger.error({}, `IPC processing error: ${(err as Error).message}`);
+      }
+      if (this.timer !== null) this.scheduleNext(intervalMs);
+    }, intervalMs);
   }
 
   async processFiles(): Promise<void> {
@@ -64,7 +75,7 @@ export class IpcWatcher {
       case 'schedule_task':
         this.deps.scheduler.createTask({
           id: randomUUID(),
-          group_folder: '', // set by caller context
+          group_folder: task.group_folder,
           chat_jid: task.targetJid,
           prompt: task.prompt,
           script: task.script ?? null,
@@ -92,9 +103,22 @@ export class IpcWatcher {
         this.deps.scheduler.updateTask(taskId, updates);
         break;
       }
-      case 'register_group':
+      case 'register_group': {
+        this.deps.db.registerGroup({
+          name: task.name,
+          folder: task.folder,
+          trigger: task.trigger,
+          added_at: new Date().toISOString(),
+          is_main: false,
+          requires_trigger: true,
+          timeout: 300,
+        });
+        mkdirSync(join(this.deps.ipcDir, '..', 'groups', task.folder), { recursive: true });
+        this.deps.logger.info({ folder: task.folder }, 'Group registered via IPC');
+        break;
+      }
       case 'refresh_groups':
-        this.deps.logger.info({ type: task.type }, 'Group management IPC received');
+        this.deps.logger.info({}, 'Groups refresh requested via IPC');
         break;
     }
   }
@@ -105,7 +129,6 @@ export class IpcWatcher {
     try {
       renameSync(filePath, join(errDir, fileName));
     } catch {
-      // If rename fails, just try to remove the file
       try { unlinkSync(filePath); } catch { /* ignore */ }
     }
   }

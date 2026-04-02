@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   myclaw:
     build: .
@@ -8,7 +6,8 @@ services:
       - ./data:/app/data
       - ./groups:/app/groups
       - ./skills:/app/skills
-      - /var/run/docker.sock:/var/run/docker.sock
+      # NOTE: Docker socket intentionally NOT mounted.
+      # Run MyClaw on the host or use a socket proxy with strict ACLs.
       - ${MYCLAW_WORKSPACE_DIR:-.}:/app/workspace-repo
     env_file: .env
     restart: unless-stopped

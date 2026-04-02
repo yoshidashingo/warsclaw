@@ -2,12 +2,19 @@ type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 const LEVELS: Record<LogLevel, number> = { debug: 0, info: 1, warn: 2, error: 3 };
 
-const SECRET_PATTERNS = [/sk-ant-[a-zA-Z0-9-]+/g, /xoxb-[a-zA-Z0-9-]+/g, /xapp-[a-zA-Z0-9-]+/g];
+const SECRET_PATTERNS = [
+  /sk-ant-[a-zA-Z0-9-]+/g,
+  /xoxb-[a-zA-Z0-9-]+/g,
+  /xapp-[a-zA-Z0-9-]+/g,
+  /[A-Za-z0-9]{24,}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{27,}/g,
+];
 
-function maskSecrets(str: string): string {
+export function maskSecrets(str: string): string {
   let result = str;
   for (const pattern of SECRET_PATTERNS) {
-    result = result.replace(pattern, (m) => (m.length <= 8 ? '***' : m.slice(0, 4) + '...' + m.slice(-4)));
+    result = result.replace(new RegExp(pattern.source, pattern.flags), (m) =>
+      m.length <= 8 ? '***' : m.slice(0, 4) + '...' + m.slice(-4),
+    );
   }
   return result;
 }
@@ -37,12 +44,13 @@ export class Logger {
 
   private log(level: LogLevel, context: Record<string, unknown>, message: string): void {
     if (LEVELS[level] < this.minLevel) return;
-    const entry = JSON.stringify({
+    const raw = JSON.stringify({
       timestamp: new Date().toISOString(),
       level,
       ...context,
-      message: maskSecrets(message),
+      message,
     });
+    const entry = maskSecrets(raw);
     if (level === 'error') {
       process.stderr.write(entry + '\n');
     } else {

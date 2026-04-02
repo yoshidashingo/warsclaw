@@ -51,7 +51,9 @@ export function createSlackChannel(opts: ChannelOpts): Channel | null {
 
     async sendMessage(jid: string, text: string) {
       const channel = jid.replace('slack_', '');
-      await app.client.chat.postMessage({ token: botToken, channel, text });
+      for (let i = 0; i < text.length; i += 4000) {
+        await app.client.chat.postMessage({ token: botToken, channel, text: text.slice(i, i + 4000) });
+      }
     },
 
     onInboundMessage(callback: (msg: NewMessage) => void) {
