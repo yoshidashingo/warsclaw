@@ -201,6 +201,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  console.error('Fatal error:', err);
+  process.stderr.write(`Fatal error: ${err}\n`);
   process.exit(1);
 });

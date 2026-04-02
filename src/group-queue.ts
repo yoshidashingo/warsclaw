@@ -73,7 +73,7 @@ export class GroupQueue {
       const task = queue.shift()!;
       this.activeGroups.add(group);
       this.activeCount++;
-      this.executeWithRetry(task);
+      void this.executeWithRetry(task);
       if (this.activeCount >= this.maxConcurrent) break;
     }
   }
