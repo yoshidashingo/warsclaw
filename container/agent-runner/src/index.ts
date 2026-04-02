@@ -1,5 +1,3 @@
-import { execSync } from 'node:child_process';
-
 const OUTPUT_START = '<<<OUTPUT_START>>>';
 const OUTPUT_END = '<<<OUTPUT_END>>>';
 
@@ -12,6 +10,7 @@ interface ContainerInput {
   isScheduledTask: boolean;
   assistantName: string;
   script?: string;
+  timeout?: number;
 }
 
 interface ContainerOutput {
@@ -44,13 +43,13 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Use mounted repo as primary working directory, fall back to group folder
   const { existsSync } = await import('node:fs');
   const repoDir = '/workspace/repo';
   const workDir = existsSync(repoDir) ? repoDir : `/workspace/groups/${input.groupFolder}`;
 
   try {
-    // Build claude command
+    const { spawnSync } = await import('node:child_process');
+
     const args = ['--print', '--output-format', 'text'];
     if (input.sessionId) {
       args.push('--resume', input.sessionId);
@@ -60,26 +59,31 @@ async function main(): Promise<void> {
       ? `Execute this script:\n${input.script}\n\nContext:\n${input.prompt}`
       : input.prompt;
 
-    // Execute claude CLI
-    const result = execSync(`echo ${JSON.stringify(prompt)} | claude ${args.join(' ')}`, {
+    const result = spawnSync('claude', args, {
       cwd: workDir,
       encoding: 'utf-8',
-      timeout: 300_000, // 5 minutes
+      timeout: (input.timeout ?? 300) * 1000,
+      input: prompt,
       env: { ...process.env, HOME: workDir },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 
+    if (result.error) {
+      writeOutput({ status: 'error', result: '', error: result.error.message.slice(0, 1000) });
+      return;
+    }
+
+    const stdout = result.stdout ?? '';
+    const sessionId = input.sessionId || `myclaw-${input.groupFolder}`;
+
     writeOutput({
-      status: 'success',
-      result: result.trim(),
+      status: result.status === 0 ? 'success' : 'error',
+      result: stdout.trim(),
+      newSessionId: sessionId,
+      error: result.status !== 0 ? (result.stderr ?? '').slice(0, 1000) : undefined,
     });
   } catch (err) {
-    const error = err as Error & { stderr?: string };
-    writeOutput({
-      status: 'error',
-      result: '',
-      error: error.stderr?.slice(0, 1000) || error.message.slice(0, 1000),
-    });
+    writeOutput({ status: 'error', result: '', error: (err as Error).message.slice(0, 1000) });
   }
 }
 

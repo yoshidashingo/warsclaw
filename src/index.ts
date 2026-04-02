@@ -142,7 +142,7 @@ async function main(): Promise<void> {
         },
         onError: (error) => {
           logger.error({ groupFolder: group.folder, chatJid: msg.chat_jid }, `Processing failed: ${error.message}`);
-          router.routeOutbound(msg.chat_jid, `Error: ${error.message}`).catch(() => {});
+          router.routeOutbound(msg.chat_jid, '処理中にエラーが発生しました。しばらく経ってから再度お試しください。').catch(() => {});
         },
       });
     });

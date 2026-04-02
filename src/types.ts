@@ -47,6 +47,7 @@ export interface ContainerInput {
   isScheduledTask: boolean;
   assistantName: string;
   script?: string;
+  timeout?: number;
 }
 
 export interface ContainerOutput {
