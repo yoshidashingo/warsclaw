@@ -68,6 +68,8 @@ export interface QueueTask {
 
 // --- Task Types ---
 
+export type ApprovalMode = 'required' | 'notify_only' | 'auto';
+
 export interface ScheduledTask {
   id: string;
   group_folder: string;
@@ -82,6 +84,60 @@ export interface ScheduledTask {
   last_result: string | null;
   status: 'active' | 'paused' | 'completed';
   created_at: string;
+  // Trust score fields
+  trust_score: number;
+  consecutive_successes: number;
+  total_positive_feedback: number;
+  total_runs: number;
+  approval_mode: ApprovalMode;
+  approval_mode_locked: boolean;
+}
+
+// --- Task Lifecycle Types ---
+
+export type TaskRunState =
+  | 'planning'
+  | 'awaiting_approval'
+  | 'rejected'
+  | 'executing'
+  | 'reporting'
+  | 'awaiting_feedback'
+  | 'completed'
+  | 'error';
+
+export interface TaskRun {
+  id: string;
+  task_id: string;
+  state: TaskRunState;
+  plan: string | null;
+  plan_slack_ts: string | null;
+  plan_channel_id: string | null;
+  approval_by: string | null;
+  approval_at: number | null;
+  rejection_reason: string | null;
+  result: string | null;
+  report: string | null;
+  report_slack_ts: string | null;
+  feedback_score: number | null;
+  feedback_comment: string | null;
+  started_at: number;
+  finished_at: number | null;
+  created_at: number;
+}
+
+export interface TaskTrustFields {
+  trust_score: number;
+  consecutive_successes: number;
+  total_positive_feedback: number;
+  total_runs: number;
+  approval_mode: ApprovalMode;
+  approval_mode_locked: boolean;
+}
+
+export interface ReportData {
+  summary: string;
+  planDiff: string | null;
+  suggestions: string[];
 }
 
 export interface TaskRunLog {
