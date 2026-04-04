@@ -1,6 +1,21 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+const DANGEROUS_PATHS = ['/', '/etc', '/var', '/usr', '/bin', '/sbin', '/tmp', '/root'];
+
+export function validateWorkspacePath(p: string | undefined): void {
+  if (p === undefined) return;
+  const resolved = resolve(p);
+  if (DANGEROUS_PATHS.includes(resolved)) {
+    throw new Error(`workspaceDir is a dangerous path: ${resolved}`);
+  }
+  // Must be at least 2 levels deep
+  const parts = resolved.split('/').filter(Boolean);
+  if (parts.length < 2) {
+    throw new Error(`workspaceDir is a dangerous path: ${resolved} (too shallow)`);
+  }
+}
+
 export class Config {
   readonly pollingInterval: number;
   readonly ipcPollingInterval: number;
@@ -34,6 +49,7 @@ export class Config {
     this.assistantName = env.WARSCLAW_ASSISTANT_NAME ?? 'WarsClaw';
     this.logLevel = env.WARSCLAW_LOG_LEVEL ?? 'info';
     this.workspaceDir = env.WARSCLAW_WORKSPACE_DIR ? resolve(env.WARSCLAW_WORKSPACE_DIR) : undefined;
+    validateWorkspacePath(this.workspaceDir);
     this.discordBotToken = env.DISCORD_BOT_TOKEN || undefined;
     this.slackBotToken = env.SLACK_BOT_TOKEN || undefined;
     this.slackAppToken = env.SLACK_APP_TOKEN || undefined;
