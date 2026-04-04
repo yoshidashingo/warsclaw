@@ -242,6 +242,7 @@ export interface ReportData {
 
 // --- Trust / Approval Types ---
 
+
 export interface TaskTrustFields {
   consecutive_successes: number;
   total_positive_feedback: number;
