@@ -113,6 +113,7 @@ export interface IpcDeps {
   scheduler: import('./task-scheduler.js').TaskScheduler;
   logger: import('./logger.js').Logger;
   ipcDir: string;
+  groupsDir: string;
 }
 
 // --- Skill Types ---
@@ -124,11 +125,15 @@ export interface Skill {
 
 // --- Zod Schemas ---
 
-export const GroupFolderSchema = z
+/** Safe folder name pattern — prevents path traversal */
+export const SafeFolderSchema = z
   .string()
   .min(1)
   .max(64)
-  .regex(/^[a-zA-Z0-9_-]+$/, 'Only alphanumeric, hyphens, and underscores')
+  .regex(/^[a-zA-Z0-9_-]+$/, 'Only alphanumeric, hyphens, and underscores');
+
+/** For IPC group registration — additionally rejects reserved names */
+export const GroupFolderSchema = SafeFolderSchema
   .refine((name) => !['main', 'global', '.', '..'].includes(name), 'Reserved name');
 
 export const IpcMessageSchema = z.object({
@@ -159,9 +164,24 @@ export const IpcTaskSchema = z.discriminatedUnion('type', [
     schedule_type: z.enum(['cron', 'interval', 'once']).optional(),
     schedule_value: z.string().min(1).optional(),
   }),
-  z.object({ type: z.literal('register_group'), jid: z.string().min(1), name: z.string().min(1), folder: GroupFolderSchema, trigger: z.string().min(1) }),
-  z.object({ type: z.literal('refresh_groups') }),
-]);
+  z.object({ type: z.literal('register_group'), jid: z.string().min(1), name: z.string().min(1), folder: GroupFolderSchema, trigger: z.string().min(1), source_group: z.string().min(1) }),
+  z.object({ type: z.literal('refresh_groups'), source_group: z.string().min(1) }),
+]).superRefine((data, ctx) => {
+  if (data.type === 'schedule_task') {
+    if (data.schedule_type === 'interval') {
+      const ms = parseInt(data.schedule_value, 10);
+      if (isNaN(ms) || ms < 60000) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Interval must be >= 60000ms (1 minute)', path: ['schedule_value'] });
+      }
+    }
+    if (data.schedule_type === 'once') {
+      const ts = Date.parse(data.schedule_value);
+      if (isNaN(ts) || ts <= Date.now()) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Once schedule_value must be a future ISO date', path: ['schedule_value'] });
+      }
+    }
+  }
+});
 
 export const ContainerOutputSchema = z.object({
   status: z.enum(['success', 'error']),

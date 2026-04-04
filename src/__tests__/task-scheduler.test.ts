@@ -48,6 +48,16 @@ describe('TaskScheduler.computeNextRun', () => {
     );
   });
 
+  it('computeNextRun returns null for interval < 60000', () => {
+    const next = scheduler.computeNextRun({ schedule_type: 'interval', schedule_value: '0', last_run: null });
+    expect(next).toBeNull();
+  });
+
+  it('computeNextRun returns null for negative interval', () => {
+    const next = scheduler.computeNextRun({ schedule_type: 'interval', schedule_value: '-5000', last_run: null });
+    expect(next).toBeNull();
+  });
+
   it('PBT: cron always returns a future date', () => {
     const cronExprs = ['* * * * *', '*/5 * * * *', '0 * * * *', '0 0 * * *', '0 0 * * 1'];
     fc.assert(

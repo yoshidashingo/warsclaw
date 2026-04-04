@@ -83,6 +83,7 @@ export class TaskScheduler {
       }
       case 'interval': {
         const ms = parseInt(task.schedule_value, 10);
+        if (isNaN(ms) || ms < 60000) return null;
         const base = task.last_run ? new Date(task.last_run).getTime() : Date.now();
         return new Date(base + ms).toISOString();
       }
