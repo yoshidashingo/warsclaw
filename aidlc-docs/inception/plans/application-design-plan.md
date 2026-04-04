@@ -1,7 +1,7 @@
 # Application Design Plan
 
 ## Design Scope
-MyClaw のコンポーネント設計。NanoClaw アーキテクチャをベースに、Claude Code をエージェントランタイムとして ~2000行以下で構築。
+WarsClaw のコンポーネント設計。NanoClaw アーキテクチャをベースに、Claude Code をエージェントランタイムとして ~2000行以下で構築。
 
 ## Plan Steps
 

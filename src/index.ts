@@ -19,7 +19,7 @@ async function main(): Promise<void> {
   const config = Config.fromEnv();
   const logLevel = (['debug', 'info', 'warn', 'error'].includes(config.logLevel) ? config.logLevel : 'info') as 'debug' | 'info' | 'warn' | 'error';
   const logger = new Logger(logLevel);
-  logger.info({}, `MyClaw starting (polling=${config.pollingInterval}ms, maxContainers=${config.maxConcurrentContainers})`);
+  logger.info({}, `WarsClaw starting (polling=${config.pollingInterval}ms, maxContainers=${config.maxConcurrentContainers})`);
 
   // Ensure directories
   for (const dir of [config.dataDir, config.groupsDir, config.ipcDir]) {
@@ -96,7 +96,7 @@ async function main(): Promise<void> {
   }
 
   // 6. Set up message handling
-  //    MyClaw monitors Slack continuously — every message triggers agent processing
+  //    WarsClaw monitors Slack continuously — every message triggers agent processing
   groups = db.getRegisteredGroups();
   for (const channel of registry.getAll()) {
     channel.onInboundMessage((msg: NewMessage) => {
@@ -196,7 +196,7 @@ async function main(): Promise<void> {
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
 
-  logger.info({}, 'MyClaw is running');
+  logger.info({}, 'WarsClaw is running');
   await pollLoop();
 }
 

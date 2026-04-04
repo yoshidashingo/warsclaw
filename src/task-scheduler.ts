@@ -26,7 +26,7 @@ export class TaskScheduler {
           chatJid: task.chat_jid,
           isMain: false,
           isScheduledTask: true,
-          assistantName: 'MyClaw',
+          assistantName: 'WarsClaw',
           script: task.script ?? undefined,
         },
         onComplete: async (output) => {

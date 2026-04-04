@@ -1,4 +1,4 @@
-# Logical Components - MyClaw
+# Logical Components - WarsClaw
 
 ## Infrastructure Components
 
@@ -14,7 +14,7 @@
 ### 2. SQLite Database
 - **Role**: 永続状態ストア
 - **Configuration**:
-  - Path: `data/myclaw.db`
+  - Path: `data/warsclaw.db`
   - Journal mode: WAL (並行読み取り)
   - Synchronous: NORMAL
   - Foreign keys: ENABLED
@@ -103,7 +103,7 @@ graph TB
 
 ## Docker Image Specification
 
-### Agent Container Image (myclaw-agent)
+### Agent Container Image (warsclaw-agent)
 
 ```dockerfile
 FROM node:22-slim
@@ -124,7 +124,7 @@ RUN cd /agent-runner && npm install && npm run build
 ENTRYPOINT ["node", "/agent-runner/dist/index.js"]
 ```
 
-### MyClaw Main Image (myclaw)
+### WarsClaw Main Image (warsclaw)
 
 ```dockerfile
 FROM node:22-slim
@@ -146,7 +146,7 @@ ENTRYPOINT ["node", "dist/index.js"]
 ```yaml
 version: '3.8'
 services:
-  myclaw:
+  warsclaw:
     build: .
     volumes:
       - ./data:/app/data

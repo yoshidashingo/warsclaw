@@ -74,7 +74,7 @@ async function main(): Promise<void> {
     }
 
     const stdout = result.stdout ?? '';
-    const sessionId = input.sessionId || `myclaw-${input.groupFolder}`;
+    const sessionId = input.sessionId || `warsclaw-${input.groupFolder}`;
 
     writeOutput({
       status: result.status === 0 ? 'success' : 'error',

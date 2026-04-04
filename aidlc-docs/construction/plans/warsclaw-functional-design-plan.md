@@ -1,6 +1,6 @@
-# Functional Design Plan - MyClaw
+# Functional Design Plan - WarsClaw
 
-## Unit: MyClaw (single unit)
+## Unit: WarsClaw (single unit)
 
 - [x] Step 1: Analyze unit context (Application Design artifacts)
 - [x] Step 2: Generate domain-entities.md

@@ -1,4 +1,4 @@
-# Deployment Architecture - MyClaw
+# Deployment Architecture - WarsClaw
 
 ## Deployment Models
 
@@ -10,20 +10,20 @@
 │                                          │
 │  docker-compose.yml                      │
 │  ┌────────────────────────────────────┐  │
-│  │ myclaw container                   │  │
+│  │ warsclaw container                   │  │
 │  │  Node.js 22 main process          │  │
 │  │  Polls Discord + Slack APIs        │  │
 │  │  Manages agent containers          │  │
 │  └──────────┬─────────────────────────┘  │
 │             │ docker.sock                 │
 │  ┌──────────▼─────────────────────────┐  │
-│  │ myclaw-agent containers (0-5)     │  │
+│  │ warsclaw-agent containers (0-5)     │  │
 │  │  Ephemeral, per-message            │  │
 │  │  claude CLI + Chromium             │  │
 │  │  Mounts: groups/ (RW), root (RO)  │  │
 │  └────────────────────────────────────┘  │
 │                                          │
-│  ./data/myclaw.db    (persistent)        │
+│  ./data/warsclaw.db    (persistent)        │
 │  ./groups/           (persistent)        │
 │  ./.env              (secrets)           │
 └──────────────────────────────────────────┘
@@ -39,16 +39,16 @@
 │ Host Machine                             │
 │                                          │
 │  Node.js 22 (native)                     │
-│  MyClaw main process                     │
+│  WarsClaw main process                     │
 │  systemd/launchd service                 │
 │             │                             │
 │             │ docker CLI                  │
 │  ┌──────────▼─────────────────────────┐  │
-│  │ myclaw-agent containers (0-5)     │  │
+│  │ warsclaw-agent containers (0-5)     │  │
 │  │  Ephemeral, per-message            │  │
 │  └────────────────────────────────────┘  │
 │                                          │
-│  ./data/myclaw.db                        │
+│  ./data/warsclaw.db                        │
 │  ./groups/                               │
 └──────────────────────────────────────────┘
 ```
@@ -59,7 +59,7 @@
 ## Directory Layout (Production)
 
 ```
-/opt/myclaw/                    # or ~/myclaw/
+/opt/warsclaw/                    # or ~/warsclaw/
 ├── dist/                       # Compiled TypeScript
 │   ├── index.js
 │   ├── types.js
@@ -93,7 +93,7 @@
 │   └── {registered-groups}/
 ├── skills/                     # File-based skills
 ├── data/
-│   └── myclaw.db
+│   └── warsclaw.db
 ├── .env                        # Secrets (not in git)
 ├── .env.example                # Template
 ├── package.json
@@ -108,16 +108,16 @@
 ### Data Backup
 ```bash
 # SQLite hot backup (safe while running)
-sqlite3 data/myclaw.db ".backup 'data/myclaw.db.bak'"
+sqlite3 data/warsclaw.db ".backup 'data/warsclaw.db.bak'"
 
 # Full backup
-tar czf myclaw-backup-$(date +%Y%m%d).tar.gz data/ groups/
+tar czf warsclaw-backup-$(date +%Y%m%d).tar.gz data/ groups/
 ```
 
 ### Recovery
 ```bash
 # Restore from backup
-tar xzf myclaw-backup-YYYYMMDD.tar.gz
+tar xzf warsclaw-backup-YYYYMMDD.tar.gz
 docker compose restart
 ```
 
@@ -140,4 +140,4 @@ docker compose restart
 ### Network Isolation
 - Agent コンテナのデフォルトネットワークは Docker bridge
 - Web検索不要の場合は `--network=none` で完全隔離可能
-- 設定: `MYCLAW_AGENT_NETWORK=none` (configurable)
+- 設定: `WARSCLAW_AGENT_NETWORK=none` (configurable)

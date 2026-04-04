@@ -34,7 +34,7 @@ export class ContainerRunner {
     // Write API key to temp env-file (not visible in docker inspect)
     const { mkdtempSync, writeFileSync, unlinkSync: unlinkTmp, rmdirSync } = await import('node:fs');
     const { tmpdir } = await import('node:os');
-    const envDir = mkdtempSync(join(tmpdir(), 'myclaw-env-'));
+    const envDir = mkdtempSync(join(tmpdir(), 'warsclaw-env-'));
     const envFile = join(envDir, '.env');
     writeFileSync(envFile, `ANTHROPIC_API_KEY=${this.config.anthropicApiKey}\n`, { mode: 0o600 });
 

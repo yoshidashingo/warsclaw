@@ -1,4 +1,4 @@
-# Build and Test Summary - MyClaw
+# Build and Test Summary - WarsClaw
 
 ## Build Results
 

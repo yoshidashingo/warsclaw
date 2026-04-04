@@ -21,19 +21,19 @@ export class Config {
   readonly anthropicApiKey: string;
 
   private constructor(env: Record<string, string | undefined>) {
-    this.pollingInterval = parseInt(env.MYCLAW_POLLING_INTERVAL ?? '2000', 10);
-    this.ipcPollingInterval = parseInt(env.MYCLAW_IPC_INTERVAL ?? '1000', 10);
-    this.maxConcurrentContainers = parseInt(env.MYCLAW_MAX_CONTAINERS ?? '5', 10);
-    this.maxRetries = parseInt(env.MYCLAW_MAX_RETRIES ?? '5', 10);
-    this.timezone = env.MYCLAW_TIMEZONE ?? 'UTC';
-    this.dataDir = resolve(env.MYCLAW_DATA_DIR ?? './data');
-    this.groupsDir = resolve(env.MYCLAW_GROUPS_DIR ?? './groups');
-    this.ipcDir = resolve(env.MYCLAW_IPC_DIR ?? './ipc');
-    this.dbPath = resolve(this.dataDir, 'myclaw.db');
-    this.dockerImage = env.MYCLAW_DOCKER_IMAGE ?? 'myclaw-agent';
-    this.assistantName = env.MYCLAW_ASSISTANT_NAME ?? 'MyClaw';
-    this.logLevel = env.MYCLAW_LOG_LEVEL ?? 'info';
-    this.workspaceDir = env.MYCLAW_WORKSPACE_DIR ? resolve(env.MYCLAW_WORKSPACE_DIR) : undefined;
+    this.pollingInterval = parseInt(env.WARSCLAW_POLLING_INTERVAL ?? '2000', 10);
+    this.ipcPollingInterval = parseInt(env.WARSCLAW_IPC_INTERVAL ?? '1000', 10);
+    this.maxConcurrentContainers = parseInt(env.WARSCLAW_MAX_CONTAINERS ?? '5', 10);
+    this.maxRetries = parseInt(env.WARSCLAW_MAX_RETRIES ?? '5', 10);
+    this.timezone = env.WARSCLAW_TIMEZONE ?? 'UTC';
+    this.dataDir = resolve(env.WARSCLAW_DATA_DIR ?? './data');
+    this.groupsDir = resolve(env.WARSCLAW_GROUPS_DIR ?? './groups');
+    this.ipcDir = resolve(env.WARSCLAW_IPC_DIR ?? './ipc');
+    this.dbPath = resolve(this.dataDir, 'warsclaw.db');
+    this.dockerImage = env.WARSCLAW_DOCKER_IMAGE ?? 'warsclaw-agent';
+    this.assistantName = env.WARSCLAW_ASSISTANT_NAME ?? 'WarsClaw';
+    this.logLevel = env.WARSCLAW_LOG_LEVEL ?? 'info';
+    this.workspaceDir = env.WARSCLAW_WORKSPACE_DIR ? resolve(env.WARSCLAW_WORKSPACE_DIR) : undefined;
     this.discordBotToken = env.DISCORD_BOT_TOKEN || undefined;
     this.slackBotToken = env.SLACK_BOT_TOKEN || undefined;
     this.slackAppToken = env.SLACK_APP_TOKEN || undefined;

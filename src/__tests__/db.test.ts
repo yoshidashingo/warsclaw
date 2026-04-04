@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 
 function createTestDb(): { db: Database; path: string } {
-  const dir = join(tmpdir(), 'myclaw-test-' + randomUUID());
+  const dir = join(tmpdir(), 'warsclaw-test-' + randomUUID());
   mkdirSync(dir, { recursive: true });
   const path = join(dir, 'test.db');
   const db = new Database(path);

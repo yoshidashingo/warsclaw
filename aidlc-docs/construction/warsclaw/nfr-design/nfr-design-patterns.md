@@ -1,4 +1,4 @@
-# NFR Design Patterns - MyClaw
+# NFR Design Patterns - WarsClaw
 
 ## Pattern 1: Container Sandbox (Security)
 
@@ -8,7 +8,7 @@
 
 ```
 ┌─────────────────────────────────┐
-│ Host (MyClaw Main Process)      │
+│ Host (WarsClaw Main Process)      │
 │  ┌───────────────────────────┐  │
 │  │ Docker Container (--rm)   │  │
 │  │  /workspace (RO)          │  │

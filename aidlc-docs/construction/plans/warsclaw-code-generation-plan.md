@@ -1,4 +1,4 @@
-# Code Generation Plan - MyClaw
+# Code Generation Plan - WarsClaw
 
 ## Unit Context
 - **Project Type**: Greenfield single unit
@@ -68,7 +68,7 @@
 ### Phase L: Docker & Deployment
 
 - [ ] **Step 25**: Create `container/Dockerfile` — Agent container image (node:22-slim + chromium + claude CLI)
-- [ ] **Step 26**: Create `Dockerfile` — MyClaw main image
+- [ ] **Step 26**: Create `Dockerfile` — WarsClaw main image
 - [ ] **Step 27**: Create `docker-compose.yml`
 
 ### Phase M: Group Templates & Documentation

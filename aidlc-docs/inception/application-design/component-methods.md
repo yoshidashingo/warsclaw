@@ -173,9 +173,9 @@ class Config {
   readonly dataDir: string;               // data/
   readonly groupsDir: string;             // groups/
   readonly ipcDir: string;                // workspace/ipc/
-  readonly dbPath: string;                // data/myclaw.db
-  readonly dockerImage: string;           // myclaw-agent
-  readonly assistantName: string;         // default: "MyClaw"
+  readonly dbPath: string;                // data/warsclaw.db
+  readonly dockerImage: string;           // warsclaw-agent
+  readonly assistantName: string;         // default: "WarsClaw"
 
   static fromEnv(): Config;
 }

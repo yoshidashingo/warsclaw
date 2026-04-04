@@ -1,8 +1,8 @@
-# MyClaw Application Design
+# WarsClaw Application Design
 
 ## Design Summary
 
-MyClaw は NanoClaw のアーキテクチャをベースに ~2000行以下で構築するパーソナルAIエージェント。
+WarsClaw は NanoClaw のアーキテクチャをベースに ~2000行以下で構築するパーソナルAIエージェント。
 
 **Key Design Decisions:**
 - **Agent Runtime**: Claude Code CLI をDockerコンテナ内でstdin/stdout経由実行
@@ -22,7 +22,7 @@ graph TB
         DOCKER[Docker Daemon]
     end
 
-    subgraph MyClaw["MyClaw Main Process"]
+    subgraph WarsClaw["WarsClaw Main Process"]
         ORCH[Orchestrator<br/>メインループ 2s]
         REG[ChannelRegistry]
         DISC[DiscordChannel]
@@ -135,7 +135,7 @@ SkillLoader → Channel Registration → Orchestrator.start()
 ## File Structure
 
 ```
-myclaw/
+warsclaw/
 ├── src/
 │   ├── index.ts              # Orchestrator
 │   ├── types.ts              # 全型定義
@@ -164,7 +164,7 @@ myclaw/
 ├── skills/                   # ファイルベーススキル
 ├── package.json
 ├── tsconfig.json
-├── Dockerfile                # MyClaw本体コンテナ
+├── Dockerfile                # WarsClaw本体コンテナ
 └── docker-compose.yml
 ```
 

@@ -65,7 +65,7 @@ src/
 └── skills/               # 拡張スキル
 ```
 
-### Existing Files Inventory (NanoClaw - MyClaw参考用)
+### Existing Files Inventory (NanoClaw - WarsClaw参考用)
 
 - `src/index.ts` - メインオーケストレータ、チャネル初期化、ポーリングループ
 - `src/types.ts` - Channel, NewMessage, ScheduledTask等の型定義

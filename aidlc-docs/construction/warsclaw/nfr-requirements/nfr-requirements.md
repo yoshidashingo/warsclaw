@@ -1,4 +1,4 @@
-# NFR Requirements - MyClaw
+# NFR Requirements - WarsClaw
 
 ## NFR-01: Security
 

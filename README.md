@@ -1,7 +1,7 @@
 <h1 align="center">
-  <img src="docs/icon.png" alt="MyClaw" width="128">
+  <img src="docs/icon.png" alt="WarsClaw" width="128">
   <br>
-  MyClaw
+  WarsClaw
   <br>
   <br>
 </h1>
@@ -23,9 +23,9 @@
   <a href="README-ja.md">日本語</a>
 </p>
 
-## What is MyClaw?
+## What is WarsClaw?
 
-MyClaw is a **persistent, autonomous operator** that runs forever. It monitors Slack channels, works on a mounted repository, and continuously cycles through a self-improving loop:
+WarsClaw is a **persistent, autonomous operator** that runs forever. It monitors Slack channels, works on a mounted repository, and continuously cycles through a self-improving loop:
 
 ```
     ┌─── Rule ───→ Execute ───→ Reflect ───→ Propose & Learn ───┐
@@ -34,7 +34,7 @@ MyClaw is a **persistent, autonomous operator** that runs forever. It monitors S
 
 It is not a chatbot. It is an operator that **creates its own rules, executes work, reflects on results, and deepens its understanding** — all autonomously.
 
-Inspired by [OpenClaw](https://github.com/pjasicek/OpenClaw) (23+ channels, 92+ plugins, 60k+ LOC) and [NanoClaw](https://github.com/nicabar/NanoClaw) (~3k LOC), MyClaw distills the best patterns from both into **~1250 lines**.
+Inspired by [OpenClaw](https://github.com/pjasicek/OpenClaw) (23+ channels, 92+ plugins, 60k+ LOC) and [NanoClaw](https://github.com/nicabar/NanoClaw) (~3k LOC), WarsClaw distills the best patterns from both into **~1250 lines**.
 
 ## Features
 
@@ -73,7 +73,7 @@ Inspired by [OpenClaw](https://github.com/pjasicek/OpenClaw) (23+ channels, 92+ 
 
 ```bash
 # 1. Clone and configure
-git clone https://github.com/yoshidashingo/myclaw.git && cd myclaw
+git clone https://github.com/yoshidashingo/warsclaw.git && cd warsclaw
 cp .env.example .env
 ```
 
@@ -83,8 +83,8 @@ Edit `.env`:
 ANTHROPIC_API_KEY=sk-ant-...
 SLACK_BOT_TOKEN=xoxb-...
 SLACK_APP_TOKEN=xapp-...
-MYCLAW_WORKSPACE_DIR=/path/to/your/repo   # The repo MyClaw will work on
-MYCLAW_TIMEZONE=Asia/Tokyo                 # Your timezone
+WARSCLAW_WORKSPACE_DIR=/path/to/your/repo   # The repo WarsClaw will work on
+WARSCLAW_TIMEZONE=Asia/Tokyo                 # Your timezone
 ```
 
 ```bash
@@ -93,9 +93,9 @@ npm install
 npm run build
 
 # 3. Build the agent container image
-docker build -t myclaw-agent -f container/Dockerfile container/
+docker build -t warsclaw-agent -f container/Dockerfile container/
 
-# 4. Start MyClaw
+# 4. Start WarsClaw
 npm start
 ```
 
@@ -112,13 +112,13 @@ docker compose up -d --build
 | `ANTHROPIC_API_KEY` | Yes | — | Anthropic API key |
 | `SLACK_BOT_TOKEN` | Yes | — | Slack bot token |
 | `SLACK_APP_TOKEN` | Yes | — | Slack app-level token (Socket Mode) |
-| `MYCLAW_WORKSPACE_DIR` | Yes | — | Path to the target repository |
+| `WARSCLAW_WORKSPACE_DIR` | Yes | — | Path to the target repository |
 | `DISCORD_BOT_TOKEN` | No | — | Discord bot token |
-| `MYCLAW_POLLING_INTERVAL` | No | `2000` | Message poll interval (ms) |
-| `MYCLAW_MAX_CONTAINERS` | No | `5` | Max concurrent agent containers |
-| `MYCLAW_TIMEZONE` | No | `UTC` | IANA timezone for cron schedules |
-| `MYCLAW_ASSISTANT_NAME` | No | `MyClaw` | Bot display name |
-| `MYCLAW_LOG_LEVEL` | No | `info` | Log level (debug/info/warn/error) |
+| `WARSCLAW_POLLING_INTERVAL` | No | `2000` | Message poll interval (ms) |
+| `WARSCLAW_MAX_CONTAINERS` | No | `5` | Max concurrent agent containers |
+| `WARSCLAW_TIMEZONE` | No | `UTC` | IANA timezone for cron schedules |
+| `WARSCLAW_ASSISTANT_NAME` | No | `WarsClaw` | Bot display name |
+| `WARSCLAW_LOG_LEVEL` | No | `info` | Log level (debug/info/warn/error) |
 
 ## Architecture
 

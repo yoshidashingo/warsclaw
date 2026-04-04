@@ -1,7 +1,7 @@
-# MyClaw - Personal AI Agent
+# WarsClaw - Personal AI Agent
 
 ## Project Overview
-MyClaw は Discord/Slack から Claude Code CLI を通じて AI アシスタントと対話できるパーソナルエージェント。
+WarsClaw は Discord/Slack から Claude Code CLI を通じて AI アシスタントと対話できるパーソナルエージェント。
 グループ単位の会話コンテキスト隔離、スケジュールタスク自動実行に対応。
 
 ## Tech Stack
