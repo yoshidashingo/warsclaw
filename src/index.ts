@@ -38,7 +38,7 @@ async function main(): Promise<void> {
   const runner = new ContainerRunner(config, logger);
   const queue = new GroupQueue(runner, logger, config.maxConcurrentContainers, config.maxRetries);
   const scheduler = new TaskScheduler(db, queue, logger, config.timezone);
-  const ipcWatcher = new IpcWatcher({ db, router, scheduler, logger, ipcDir: config.ipcDir });
+  const ipcWatcher = new IpcWatcher({ db, router, scheduler, logger, ipcDir: config.ipcDir, groupsDir: config.groupsDir });
 
   const skillLoader = new SkillLoader('./skills', logger);
   skillLoader.loadAll();

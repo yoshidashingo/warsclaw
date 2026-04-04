@@ -13,6 +13,22 @@ interface ContainerInput {
   timeout?: number;
 }
 
+/** Lightweight runtime validation (no Zod dependency in container) */
+function validateInput(raw: unknown): ContainerInput {
+  if (typeof raw !== 'object' || raw === null) throw new Error('Input must be an object');
+  const obj = raw as Record<string, unknown>;
+  if (typeof obj.prompt !== 'string' || !obj.prompt) throw new Error('prompt must be a non-empty string');
+  if (typeof obj.sessionId !== 'string') throw new Error('sessionId must be a string');
+  if (typeof obj.groupFolder !== 'string' || !/^[a-zA-Z0-9_-]+$/.test(obj.groupFolder)) throw new Error('groupFolder must be alphanumeric');
+  if (typeof obj.chatJid !== 'string') throw new Error('chatJid must be a string');
+  if (typeof obj.isMain !== 'boolean') throw new Error('isMain must be a boolean');
+  if (typeof obj.isScheduledTask !== 'boolean') throw new Error('isScheduledTask must be a boolean');
+  if (typeof obj.assistantName !== 'string') throw new Error('assistantName must be a string');
+  if (obj.script !== undefined && typeof obj.script !== 'string') throw new Error('script must be a string');
+  if (obj.timeout !== undefined && (typeof obj.timeout !== 'number' || obj.timeout <= 0 || obj.timeout > 3600)) throw new Error('timeout must be 1-3600');
+  return obj as unknown as ContainerInput;
+}
+
 interface ContainerOutput {
   status: 'success' | 'error';
   result: string;
@@ -37,9 +53,9 @@ async function main(): Promise<void> {
   let input: ContainerInput;
   try {
     const raw = await readStdin();
-    input = JSON.parse(raw);
+    input = validateInput(JSON.parse(raw));
   } catch (err) {
-    writeOutput({ status: 'error', result: '', error: `Failed to parse input: ${(err as Error).message}` });
+    writeOutput({ status: 'error', result: '', error: `Invalid input: ${(err as Error).message}` });
     return;
   }
 
@@ -64,7 +80,7 @@ async function main(): Promise<void> {
       encoding: 'utf-8',
       timeout: (input.timeout ?? 300) * 1000,
       input: prompt,
-      env: { ...process.env, HOME: workDir },
+      env: { ...process.env, HOME: '/home/agent' },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 
