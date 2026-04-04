@@ -137,17 +137,26 @@ export class Database {
       .run(task.id, task.group_folder, task.chat_jid, task.prompt, task.script, task.schedule_type, task.schedule_value, task.context_mode, task.next_run, task.last_run, task.last_result, task.status, task.created_at);
   }
 
-  private static readonly TASK_UPDATABLE_FIELDS = new Set([
-    'prompt', 'script', 'schedule_type', 'schedule_value', 'context_mode',
-    'next_run', 'last_run', 'last_result', 'status',
+  /** Static map of allowed column names — prevents SQL identifier injection */
+  private static readonly TASK_COLUMN_SQL = new Map<string, string>([
+    ['prompt', 'UPDATE scheduled_tasks SET prompt = ? WHERE id = ?'],
+    ['script', 'UPDATE scheduled_tasks SET script = ? WHERE id = ?'],
+    ['schedule_type', 'UPDATE scheduled_tasks SET schedule_type = ? WHERE id = ?'],
+    ['schedule_value', 'UPDATE scheduled_tasks SET schedule_value = ? WHERE id = ?'],
+    ['context_mode', 'UPDATE scheduled_tasks SET context_mode = ? WHERE id = ?'],
+    ['next_run', 'UPDATE scheduled_tasks SET next_run = ? WHERE id = ?'],
+    ['last_run', 'UPDATE scheduled_tasks SET last_run = ? WHERE id = ?'],
+    ['last_result', 'UPDATE scheduled_tasks SET last_result = ? WHERE id = ?'],
+    ['status', 'UPDATE scheduled_tasks SET status = ? WHERE id = ?'],
   ]);
 
   updateTask(taskId: string, updates: Partial<ScheduledTask>): void {
-    const fields = Object.entries(updates)
-      .filter(([k, v]) => v !== undefined && Database.TASK_UPDATABLE_FIELDS.has(k));
-    if (fields.length === 0) return;
-    const setClause = fields.map(([k]) => `${k} = ?`).join(', ');
-    this.db.prepare(`UPDATE scheduled_tasks SET ${setClause} WHERE id = ?`).run(...fields.map(([, v]) => v), taskId);
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === undefined) continue;
+      const sql = Database.TASK_COLUMN_SQL.get(key);
+      if (!sql) continue;
+      this.db.prepare(sql).run(value, taskId);
+    }
   }
 
   deleteTask(taskId: string): void {

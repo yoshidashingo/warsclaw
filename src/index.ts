@@ -1,4 +1,4 @@
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, chmodSync } from 'node:fs';
 import { Config } from './config.js';
 import { Logger } from './logger.js';
 import { Database } from './db.js';
@@ -23,11 +23,12 @@ async function main(): Promise<void> {
 
   // Ensure directories
   for (const dir of [config.dataDir, config.groupsDir, config.ipcDir]) {
-    mkdirSync(dir, { recursive: true });
+    mkdirSync(dir, { recursive: true, mode: 0o700 });
   }
 
   const db = new Database(config.dbPath);
   db.init();
+  try { chmodSync(config.dbPath, 0o600); } catch { /* first run */ }
 
   // 2. Initialize components
   const registry = new ChannelRegistry();
@@ -38,7 +39,7 @@ async function main(): Promise<void> {
   const runner = new ContainerRunner(config, logger);
   const queue = new GroupQueue(runner, logger, config.maxConcurrentContainers, config.maxRetries);
   const scheduler = new TaskScheduler(db, queue, logger, config.timezone);
-  const ipcWatcher = new IpcWatcher({ db, router, scheduler, logger, ipcDir: config.ipcDir });
+  const ipcWatcher = new IpcWatcher({ db, router, scheduler, logger, ipcDir: config.ipcDir, groupsDir: config.groupsDir });
 
   const skillLoader = new SkillLoader('./skills', logger);
   skillLoader.loadAll();
@@ -102,6 +103,16 @@ async function main(): Promise<void> {
     channel.onInboundMessage((msg: NewMessage) => {
       logger.debug({ chatJid: msg.chat_jid, sender: msg.sender, is_from_me: msg.is_from_me }, `Inbound message: ${msg.content.slice(0, 80)}`);
       db.storeMessage(msg);
+
+      // Sender/channel allowlist (empty = allow all for backward compat)
+      if (config.allowedChannels.size > 0 && !config.allowedChannels.has(msg.chat_jid)) {
+        logger.debug({ chatJid: msg.chat_jid }, 'Channel not in allowlist, skipping');
+        return;
+      }
+      if (config.allowedSenders.size > 0 && !config.allowedSenders.has(msg.sender)) {
+        logger.debug({ sender: msg.sender }, 'Sender not in allowlist, skipping');
+        return;
+      }
 
       // Find matching group
       const group = groups.find((g) => {

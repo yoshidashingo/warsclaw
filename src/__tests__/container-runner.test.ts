@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseContainerOutput } from '../container-runner.js';
+import { parseContainerOutput, MAX_OUTPUT_BYTES } from '../container-runner.js';
 
 describe('parseContainerOutput', () => {
   it('extracts JSON between markers', () => {
@@ -40,5 +40,11 @@ Done.`;
   it('rejects invalid schema', () => {
     const stdout = '<<<OUTPUT_START>>>{"status":"unknown","result":123}<<<OUTPUT_END>>>';
     expect(() => parseContainerOutput(stdout)).toThrow();
+  });
+});
+
+describe('MAX_OUTPUT_BYTES', () => {
+  it('MAX_OUTPUT_BYTES is defined as 10MB', () => {
+    expect(MAX_OUTPUT_BYTES).toBe(10 * 1024 * 1024);
   });
 });
