@@ -87,6 +87,12 @@ export class IpcWatcher {
           last_result: null,
           status: 'active',
           created_at: new Date().toISOString(),
+          trust_score: 0,
+          consecutive_successes: 0,
+          total_positive_feedback: 0,
+          total_runs: 0,
+          approval_mode: 'required',
+          approval_mode_locked: false,
         });
         break;
       case 'pause_task':

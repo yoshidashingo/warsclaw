@@ -2,9 +2,12 @@ import { CronExpressionParser } from 'cron-parser';
 import type { Database } from './db.js';
 import type { GroupQueue } from './group-queue.js';
 import type { Logger } from './logger.js';
+import type { TaskLifecycleManager } from './task-lifecycle.js';
 import type { ScheduledTask } from './types.js';
 
 export class TaskScheduler {
+  private lifecycleManager: TaskLifecycleManager | null = null;
+
   constructor(
     private readonly db: Database,
     private readonly queue: GroupQueue,
@@ -12,11 +15,26 @@ export class TaskScheduler {
     private readonly timezone: string,
   ) {}
 
+  setLifecycleManager(manager: TaskLifecycleManager): void {
+    this.lifecycleManager = manager;
+  }
+
   checkDueTasks(): void {
     const tasks = this.db.getDueTasks();
     for (const task of tasks) {
       this.logger.info({ taskId: task.id, groupFolder: task.group_folder }, 'Executing due task');
 
+      // Update next_run immediately to prevent re-triggering
+      this.db.updateTask(task.id, { next_run: this.computeNextRun(task) });
+
+      if (this.lifecycleManager) {
+        this.lifecycleManager.startRun(task).catch((err) => {
+          this.logger.error({ taskId: task.id }, `Lifecycle start failed: ${(err as Error).message}`);
+        });
+        continue;
+      }
+
+      // Fallback: direct execution (original behavior)
       this.queue.enqueue({
         groupFolder: task.group_folder,
         input: {
@@ -35,14 +53,13 @@ export class TaskScheduler {
           this.db.updateTask(task.id, {
             last_run: now,
             last_result: output.result.slice(0, 1000),
-            next_run: this.computeNextRun(task),
             status: task.schedule_type === 'once' ? 'completed' : 'active',
           });
         },
         onError: (error) => {
           const now = new Date().toISOString();
           this.db.logTaskRun({ task_id: task.id, started_at: now, finished_at: now, status: 'error', result: null, error: error.message.slice(0, 1000) });
-          this.db.updateTask(task.id, { last_run: now, next_run: this.computeNextRun(task) });
+          this.db.updateTask(task.id, { last_run: now });
         },
       });
     }
@@ -71,6 +88,16 @@ export class TaskScheduler {
   }
 
   updateTask(taskId: string, updates: Partial<ScheduledTask>): void {
+    if (updates.prompt !== undefined || updates.script !== undefined) {
+      this.db.updateTask(taskId, {
+        trust_score: 0,
+        consecutive_successes: 0,
+        total_positive_feedback: 0,
+        total_runs: 0,
+        approval_mode: 'required',
+      } as any);
+      this.logger.info({ taskId }, 'Trust score reset due to prompt/script change');
+    }
     this.db.updateTask(taskId, updates);
     this.logger.info({ taskId }, 'Task updated');
   }
