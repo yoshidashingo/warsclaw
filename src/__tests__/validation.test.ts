@@ -82,8 +82,12 @@ describe('IpcTaskSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('accepts pause_task', () => {
-    expect(IpcTaskSchema.safeParse({ type: 'pause_task', taskId: 'abc' }).success).toBe(true);
+  it('accepts pause_task with source_group', () => {
+    expect(IpcTaskSchema.safeParse({ type: 'pause_task', taskId: 'abc', source_group: 'dev-team' }).success).toBe(true);
+  });
+
+  it('rejects pause_task without source_group', () => {
+    expect(IpcTaskSchema.safeParse({ type: 'pause_task', taskId: 'abc' }).success).toBe(false);
   });
 
   it('rejects unknown type', () => {
