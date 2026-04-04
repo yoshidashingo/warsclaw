@@ -191,6 +191,28 @@ export const ContainerOutputSchema = z.object({
   error: z.string().optional(),
 });
 
+// --- Task Run Types ---
+
+export interface TaskRun {
+  id: string;
+  task_id: string;
+  state: string;
+  plan: string | null;
+  plan_slack_ts: string | null;
+  plan_channel_id: string | null;
+  approval_by: string | null;
+  approval_at: number | null;
+  rejection_reason: string | null;
+  result: string | null;
+  report: string | null;
+  report_slack_ts: string | null;
+  feedback_score: number | null;
+  feedback_comment: string | null;
+  started_at: number;
+  finished_at: number | null;
+  created_at: number;
+}
+
 // --- Trust / Approval Types ---
 
 export type ApprovalMode = 'required' | 'notify_only' | 'auto';
