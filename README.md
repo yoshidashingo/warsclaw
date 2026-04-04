@@ -1,9 +1,5 @@
 <h1 align="center">
-  <img src="docs/icon.png" alt="WarsClaw" width="128">
-  <br>
   WarsClaw
-  <br>
-  <br>
 </h1>
 
 <p align="center">
