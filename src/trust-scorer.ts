@@ -18,8 +18,8 @@ export class TrustScorer {
     return Math.min(successRate * 0.4 + feedbackRate * 0.4 + streakBonus * 0.2, 1.0);
   }
 
-  determineApprovalMode(score: number): ApprovalMode {
-    if (score >= 0.8) return 'auto';
+  determineApprovalMode(score: number, totalRuns?: number): ApprovalMode {
+    if (score >= 0.8 && (totalRuns === undefined || totalRuns >= 20)) return 'auto';
     if (score >= 0.5) return 'notify_only';
     return 'required';
   }
@@ -46,7 +46,7 @@ export class TrustScorer {
     update.trust_score = this.calculate(update);
 
     if (!update.approval_mode_locked) {
-      update.approval_mode = this.determineApprovalMode(update.trust_score);
+      update.approval_mode = this.determineApprovalMode(update.trust_score, update.total_runs);
     }
 
     return update;

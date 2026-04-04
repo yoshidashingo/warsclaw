@@ -83,7 +83,7 @@ export class Database {
 
       CREATE TABLE IF NOT EXISTS task_runs (
         id TEXT PRIMARY KEY,
-        task_id TEXT NOT NULL,
+        task_id TEXT NOT NULL REFERENCES scheduled_tasks(id) ON DELETE CASCADE,
         state TEXT NOT NULL,
         plan TEXT,
         plan_slack_ts TEXT,
@@ -240,13 +240,29 @@ export class Database {
     return (this.db.prepare(`SELECT * FROM task_runs WHERE task_id = ? ORDER BY created_at DESC LIMIT 1`).get(taskId) as TaskRun) ?? null;
   }
 
+  /** Static map of allowed column names — prevents SQL identifier injection */
+  private static readonly TASK_RUN_COLUMN_SQL = new Map<string, string>([
+    ['state', 'UPDATE task_runs SET state = ? WHERE id = ?'],
+    ['plan', 'UPDATE task_runs SET plan = ? WHERE id = ?'],
+    ['plan_slack_ts', 'UPDATE task_runs SET plan_slack_ts = ? WHERE id = ?'],
+    ['plan_channel_id', 'UPDATE task_runs SET plan_channel_id = ? WHERE id = ?'],
+    ['approval_by', 'UPDATE task_runs SET approval_by = ? WHERE id = ?'],
+    ['approval_at', 'UPDATE task_runs SET approval_at = ? WHERE id = ?'],
+    ['rejection_reason', 'UPDATE task_runs SET rejection_reason = ? WHERE id = ?'],
+    ['result', 'UPDATE task_runs SET result = ? WHERE id = ?'],
+    ['report', 'UPDATE task_runs SET report = ? WHERE id = ?'],
+    ['report_slack_ts', 'UPDATE task_runs SET report_slack_ts = ? WHERE id = ?'],
+    ['feedback_score', 'UPDATE task_runs SET feedback_score = ? WHERE id = ?'],
+    ['feedback_comment', 'UPDATE task_runs SET feedback_comment = ? WHERE id = ?'],
+    ['finished_at', 'UPDATE task_runs SET finished_at = ? WHERE id = ?'],
+  ]);
+
   updateTaskRun(runId: string, updates: Partial<TaskRun>): void {
-    const allowed = ['state', 'plan', 'plan_slack_ts', 'plan_channel_id', 'approval_by',
-      'approval_at', 'rejection_reason', 'result', 'report', 'report_slack_ts',
-      'feedback_score', 'feedback_comment', 'finished_at'] as const;
-    for (const key of allowed) {
-      if (updates[key] === undefined) continue;
-      this.db.prepare(`UPDATE task_runs SET ${key} = ? WHERE id = ?`).run(updates[key], runId);
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === undefined) continue;
+      const sql = Database.TASK_RUN_COLUMN_SQL.get(key);
+      if (!sql) continue;
+      this.db.prepare(sql).run(value, runId);
     }
   }
 

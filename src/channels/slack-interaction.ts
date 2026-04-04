@@ -80,6 +80,7 @@ export function buildReportBlocks(input: ReportBlockInput): any[] {
 // --- Slack interaction handler ---
 
 export interface LifecycleCallbacks {
+  isAuthorized(userId: string): Promise<boolean>;
   onApprove(runId: string, userId: string): Promise<void>;
   onReject(runId: string, userId: string, reason: string): Promise<void>;
   onRevise(runId: string, userId: string, instruction: string): Promise<void>;
@@ -96,6 +97,7 @@ export class SlackInteraction {
   registerHandlers(callbacks: LifecycleCallbacks): void {
     this.app.action('wc_approve', async ({ ack, body }) => {
       await ack();
+      if (!await callbacks.isAuthorized(body.user.id)) return;
       const runId = (body as any).actions[0].value;
       const userId = body.user.id;
       await callbacks.onApprove(runId, userId);
@@ -103,6 +105,7 @@ export class SlackInteraction {
 
     this.app.action('wc_reject', async ({ ack, body, client }) => {
       await ack();
+      if (!await callbacks.isAuthorized(body.user.id)) return;
       const runId = (body as any).actions[0].value;
       await client.views.open({
         trigger_id: (body as any).trigger_id,
@@ -126,6 +129,7 @@ export class SlackInteraction {
 
     this.app.action('wc_revise', async ({ ack, body, client }) => {
       await ack();
+      if (!await callbacks.isAuthorized(body.user.id)) return;
       const runId = (body as any).actions[0].value;
       await client.views.open({
         trigger_id: (body as any).trigger_id,
@@ -149,6 +153,7 @@ export class SlackInteraction {
 
     this.app.action('wc_feedback_score', async ({ ack, body }) => {
       await ack();
+      if (!await callbacks.isAuthorized(body.user.id)) return;
       const action = (body as any).actions[0];
       const runId = action.block_id.replace('wc_feedback_', '');
       const score = parseInt(action.selected_option.value, 10);
@@ -157,6 +162,7 @@ export class SlackInteraction {
 
     this.app.action('wc_feedback_comment', async ({ ack, body, client }) => {
       await ack();
+      if (!await callbacks.isAuthorized(body.user.id)) return;
       const runId = (body as any).actions[0].value;
       await client.views.open({
         trigger_id: (body as any).trigger_id,

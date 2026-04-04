@@ -102,9 +102,15 @@ export class TaskLifecycleManager {
 
     if (task.approval_mode === 'notify_only') {
       const delay = this.config.notifyOnlyDelayMs ?? 1800000;
-      this.startTimer(run.id, delay, () => this.handleApproval(run.id, 'system:auto'));
+      this.startTimer(run.id, delay, () => {
+        const current = this.db.getTaskRun(run.id);
+        if (!current || current.state !== 'awaiting_approval') return;
+        this.handleApproval(run.id, 'system:auto');
+      });
     } else {
       this.startTimer(run.id, this.config.approvalTimeoutMs, () => {
+        const current = this.db.getTaskRun(run.id);
+        if (!current || current.state !== 'awaiting_approval') return;
         this.logger.warn({ runId: run.id }, 'Approval timed out');
         this.db.updateTaskRun(run.id, { state: 'rejected', rejection_reason: 'Approval timeout', finished_at: Date.now() });
       });
@@ -158,6 +164,12 @@ export class TaskLifecycleManager {
       const revisedTask = { ...task, prompt: `${task.prompt}\n\n修正指示: ${instruction}` };
       await this.generatePlan(run, revisedTask);
     }
+  }
+
+  async handleFeedbackComment(runId: string, comment: string): Promise<void> {
+    const run = this.db.getTaskRun(runId);
+    if (!run) return;
+    this.db.updateTaskRun(runId, { feedback_comment: comment });
   }
 
   async handleFeedback(runId: string, score: number, comment?: string): Promise<void> {
@@ -251,21 +263,10 @@ export class TaskLifecycleManager {
     this.db.updateTaskRun(run.id, { report_slack_ts: ts });
 
     this.startTimer(run.id, this.config.feedbackTimeoutMs, () => {
+      const current = this.db.getTaskRun(run.id);
+      if (!current || current.state !== 'awaiting_feedback') return;
       this.logger.info({ runId: run.id }, 'Feedback timed out, completing run');
       this.db.updateTaskRun(run.id, { state: 'completed', finished_at: Date.now() });
-
-      const updated = this.trustScorer.updateAfterRun(
-        {
-          trust_score: task.trust_score,
-          consecutive_successes: task.consecutive_successes,
-          total_positive_feedback: task.total_positive_feedback,
-          total_runs: task.total_runs,
-          approval_mode: task.approval_mode,
-          approval_mode_locked: task.approval_mode_locked,
-        },
-        true, undefined,
-      );
-      this.db.updateTask(task.id, updated as any);
       this.db.updateTask(task.id, {
         last_run: new Date().toISOString(),
         status: task.schedule_type === 'once' ? 'completed' : 'active',
@@ -284,7 +285,7 @@ export class TaskLifecycleManager {
   }
 
   async recoverPendingRuns(): Promise<void> {
-    const pending = this.db.getTaskRunsByState('awaiting_approval', 'awaiting_feedback');
+    const pending = this.db.getTaskRunsByState('awaiting_approval', 'awaiting_feedback', 'planning', 'executing');
     for (const run of pending) {
       this.logger.info({ runId: run.id, state: run.state }, 'Recovering pending run');
       const age = Date.now() - run.created_at;
@@ -296,6 +297,9 @@ export class TaskLifecycleManager {
         });
       } else if (run.state === 'awaiting_feedback' && age > this.config.feedbackTimeoutMs) {
         this.db.updateTaskRun(run.id, { state: 'completed', finished_at: Date.now() });
+      } else if ((run.state === 'planning' || run.state === 'executing') && age > 7200000) {
+        this.db.updateTaskRun(run.id, { state: 'error', finished_at: Date.now() });
+        this.logger.warn({ runId: run.id, state: run.state }, 'Stale run marked as error during recovery');
       }
     }
   }

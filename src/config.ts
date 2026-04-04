@@ -19,6 +19,7 @@ export class Config {
   readonly slackBotToken: string | undefined;
   readonly slackAppToken: string | undefined;
   readonly anthropicApiKey: string;
+  readonly allowedSenders: Set<string>;
 
   private constructor(env: Record<string, string | undefined>) {
     this.pollingInterval = parseInt(env.WARSCLAW_POLLING_INTERVAL ?? '2000', 10);
@@ -42,6 +43,10 @@ export class Config {
       throw new Error('ANTHROPIC_API_KEY is required. Set it in .env or as an environment variable.');
     }
     this.anthropicApiKey = apiKey;
+    const allowedSendersRaw = env.WARSCLAW_ALLOWED_SENDERS ?? '';
+    this.allowedSenders = allowedSendersRaw
+      ? new Set(allowedSendersRaw.split(',').map((s) => s.trim()).filter(Boolean))
+      : new Set();
   }
 
   static fromEnv(): Config {

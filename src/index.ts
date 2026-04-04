@@ -65,11 +65,15 @@ async function main(): Promise<void> {
     scheduler.setLifecycleManager(lifecycleManager);
 
     slackInteraction.registerHandlers({
+      isAuthorized: async (userId) => {
+        if (config.allowedSenders.size === 0) return true;
+        return config.allowedSenders.has(userId);
+      },
       onApprove: (runId, userId) => lifecycleManager!.handleApproval(runId, userId),
       onReject: (runId, userId, reason) => lifecycleManager!.handleRejection(runId, userId, reason),
       onRevise: (runId, userId, instruction) => lifecycleManager!.handleRevisionRequest(runId, userId, instruction),
       onFeedbackScore: (runId, score) => lifecycleManager!.handleFeedback(runId, score),
-      onFeedbackComment: (runId, comment) => lifecycleManager!.handleFeedback(runId, 0, comment),
+      onFeedbackComment: (runId, comment) => lifecycleManager!.handleFeedbackComment(runId, comment),
     });
 
     logger.info({}, 'Task lifecycle manager initialized with Slack interaction');

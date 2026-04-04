@@ -67,7 +67,18 @@ describe('TrustScorer', () => {
       expect(scorer.determineApprovalMode(0.79)).toBe('notify_only');
     });
 
-    it('returns "auto" for score >= 0.8', () => {
+    it('returns "auto" for score >= 0.8 with >= 20 total runs', () => {
+      expect(scorer.determineApprovalMode(0.8, 20)).toBe('auto');
+      expect(scorer.determineApprovalMode(1.0, 20)).toBe('auto');
+      expect(scorer.determineApprovalMode(1.0, 100)).toBe('auto');
+    });
+
+    it('returns "notify_only" for score >= 0.8 with < 20 total runs', () => {
+      expect(scorer.determineApprovalMode(0.8, 0)).toBe('notify_only');
+      expect(scorer.determineApprovalMode(1.0, 19)).toBe('notify_only');
+    });
+
+    it('returns "auto" for score >= 0.8 when totalRuns is undefined (backward compat)', () => {
       expect(scorer.determineApprovalMode(0.8)).toBe('auto');
       expect(scorer.determineApprovalMode(1.0)).toBe('auto');
     });
