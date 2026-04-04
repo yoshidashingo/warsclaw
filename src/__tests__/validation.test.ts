@@ -89,6 +89,42 @@ describe('IpcTaskSchema', () => {
   it('rejects unknown type', () => {
     expect(IpcTaskSchema.safeParse({ type: 'unknown' }).success).toBe(false);
   });
+
+  it('rejects interval < 60000', () => {
+    const result = IpcTaskSchema.safeParse({
+      type: 'schedule_task',
+      prompt: 'test',
+      schedule_type: 'interval',
+      schedule_value: '0',
+      targetJid: 'discord_123',
+      group_folder: 'dev-team',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects negative interval', () => {
+    const result = IpcTaskSchema.safeParse({
+      type: 'schedule_task',
+      prompt: 'test',
+      schedule_type: 'interval',
+      schedule_value: '-1000',
+      targetJid: 'discord_123',
+      group_folder: 'dev-team',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts valid interval >= 60000', () => {
+    const result = IpcTaskSchema.safeParse({
+      type: 'schedule_task',
+      prompt: 'test',
+      schedule_type: 'interval',
+      schedule_value: '60000',
+      targetJid: 'discord_123',
+      group_folder: 'dev-team',
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe('ContainerOutputSchema', () => {
