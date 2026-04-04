@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WarsClaw - Personal AI Agent</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #7c3aed;
+      --accent-light: #a78bfa;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .hero {
+      min-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+    }
+    .hero h1 {
+      font-size: 3.5rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--accent-light), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: 1.25rem;
+      color: var(--muted);
+      max-width: 600px;
+      margin-bottom: 2rem;
+    }
+    .badges {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+    .badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .cta {
+      display: inline-block;
+      padding: 0.75rem 2rem;
+      background: var(--accent);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: opacity 0.2s;
+    }
+    .cta:hover { opacity: 0.85; }
+    .features {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+    }
+    .feature {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+    .feature h3 {
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+    }
+    .feature p {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .arch {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem;
+      text-align: center;
+    }
+    .arch pre {
+      display: inline-block;
+      text-align: left;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 2rem;
+      font-size: 0.9rem;
+      color: var(--accent-light);
+      overflow-x: auto;
+    }
+    footer {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    footer a { color: var(--accent-light); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <h1>WarsClaw</h1>
+    <p>Personal AI agent that interacts with Claude Code CLI through Discord/Slack &mdash; group-isolated conversations, scheduled tasks, Docker-containerized execution.</p>
+    <div class="badges">
+      <span class="badge">Node.js 22+</span>
+      <span class="badge">TypeScript</span>
+      <span class="badge">Claude Code CLI</span>
+      <span class="badge">Docker</span>
+      <span class="badge">Discord / Slack</span>
+    </div>
+    <a class="cta" href="https://github.com/yoshidashingo/warsclaw">View on GitHub</a>
+  </div>
+
+  <div class="arch">
+    <h2 style="margin-bottom:1rem;">Architecture</h2>
+    <pre>
+Discord/Slack  ──►  Polling Loop  ──►  Group Queue  ──►  Docker Container  ──►  Claude Code CLI
+                                           ▲                                          │
+                                     Task Scheduler                      IPC (filesystem JSON)
+                                           ▲                                          │
+                                         SQLite  ◄────────  Response Router  ◄────────┘
+    </pre>
+  </div>
+
+  <section class="features">
+    <div class="feature">
+      <h3>Group Isolation</h3>
+      <p>Each conversation group gets its own queue, context, and CLAUDE.md instructions. Full isolation between teams.</p>
+    </div>
+    <div class="feature">
+      <h3>Scheduled Tasks</h3>
+      <p>Cron, interval, and one-shot task scheduling with SQLite persistence. Automate recurring agent workflows.</p>
+    </div>
+    <div class="feature">
+      <h3>Docker Sandboxing</h3>
+      <p>Every agent execution runs inside a Docker container with resource limits, network control, and clean teardown.</p>
+    </div>
+    <div class="feature">
+      <h3>Multi-Channel</h3>
+      <p>First-class support for Discord and Slack with a pluggable channel registry. Add new platforms easily.</p>
+    </div>
+    <div class="feature">
+      <h3>IPC Protocol</h3>
+      <p>File-based IPC with JSON messages. The agent writes responses to ipc/messages/ for reliable async communication.</p>
+    </div>
+    <div class="feature">
+      <h3>Skills System</h3>
+      <p>Extensible skill loader that discovers and registers agent capabilities from the skills/ directory.</p>
+    </div>
+  </section>
+
+  <footer>
+    <p>&copy; 2026 WarsClaw &mdash; Built by <a href="https://github.com/yoshidashingo">yoshidashingo</a></p>
+  </footer>
+</body>
+</html>
