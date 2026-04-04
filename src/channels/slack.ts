@@ -1,7 +1,11 @@
 import { App } from '@slack/bolt';
 import type { Channel, ChannelOpts, NewMessage } from '../types.js';
 
-export function createSlackChannel(opts: ChannelOpts): Channel | null {
+export interface SlackChannel extends Channel {
+  getApp(): import('@slack/bolt').App;
+}
+
+export function createSlackChannel(opts: ChannelOpts): SlackChannel | null {
   const botToken = opts.config.slackBotToken;
   const appToken = opts.config.slackAppToken;
   if (!botToken || !appToken) return null;
@@ -59,5 +63,7 @@ export function createSlackChannel(opts: ChannelOpts): Channel | null {
     onInboundMessage(callback: (msg: NewMessage) => void) {
       messageCallback = callback;
     },
+
+    getApp: () => app,
   };
 }

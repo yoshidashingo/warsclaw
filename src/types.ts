@@ -213,6 +213,14 @@ export interface TaskRun {
   created_at: number;
 }
 
+// --- Report Types ---
+
+export interface ReportData {
+  summary: string;
+  planDiff: string | null;
+  suggestions: string[];
+}
+
 // --- Trust / Approval Types ---
 
 export type ApprovalMode = 'required' | 'notify_only' | 'auto';
