@@ -27,6 +27,7 @@ export class ContainerRunner {
   ) {}
 
   async run(input: ContainerInput): Promise<ContainerOutput> {
+    this.logger.debug({ groupFolder: input.groupFolder }, 'ContainerRunner.run() called');
     const groupFolder = resolve(this.config.groupsDir, input.groupFolder);
     const ipcDir = resolve(this.config.ipcDir);
 
