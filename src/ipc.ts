@@ -38,7 +38,7 @@ export class IpcWatcher {
   private async processDir(dir: string, type: 'message' | 'task'): Promise<void> {
     let files: string[];
     try {
-      files = readdirSync(dir).filter((f) => f.endsWith('.json'));
+      files = readdirSync(dir).filter((f) => f.endsWith('.json') && !f.endsWith('.tmp'));
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code === 'ENOENT') return;
       this.deps.logger.error({ dir, type }, `Failed to read IPC dir: ${(err as Error).message}`);

@@ -33,6 +33,8 @@ export class Config {
   readonly discordBotToken: string | undefined;
   readonly slackBotToken: string | undefined;
   readonly slackAppToken: string | undefined;
+  readonly allowedSenders: Set<string>;
+  readonly allowedChannels: Set<string>;
   readonly anthropicApiKey: string;
 
   private constructor(env: Record<string, string | undefined>) {
@@ -57,6 +59,12 @@ export class Config {
     if (!apiKey) {
       throw new Error('ANTHROPIC_API_KEY is required. Set it in .env or as an environment variable.');
     }
+    this.allowedSenders = new Set(
+      (env.WARSCLAW_ALLOWED_SENDERS ?? '').split(',').map(s => s.trim()).filter(Boolean)
+    );
+    this.allowedChannels = new Set(
+      (env.WARSCLAW_ALLOWED_CHANNELS ?? '').split(',').map(s => s.trim()).filter(Boolean)
+    );
     this.anthropicApiKey = apiKey;
   }
 
