@@ -8,6 +8,7 @@ const SECRET_PATTERNS = [
   /xapp-[a-zA-Z0-9-]+/g,                                         // Slack app tokens
   /[A-Za-z0-9]{24,}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{27,}/g,   // Discord bot tokens
   /AKIA[0-9A-Z]{16}/g,                                           // AWS access key IDs
+  /(?:aws_secret_access_key|AWS_SECRET_ACCESS_KEY)\s*[=:]\s*\S+/g, // AWS secret access keys (key=value form)
   /ghp_[a-zA-Z0-9]{36}/g,                                        // GitHub PATs
   /glpat-[a-zA-Z0-9_-]{20,}/g,                                   // GitLab PATs
   /Bearer\s+[A-Za-z0-9\-._~+/]+=*/g,                             // Bearer tokens

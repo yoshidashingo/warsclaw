@@ -96,23 +96,29 @@ async function main(): Promise<void> {
     }
   }
 
-  // 6. Set up message handling
-  //    WarsClaw monitors Slack continuously — every message triggers agent processing
+  // 6. Set up message handling with rate limiting
+  const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+  const RATE_LIMIT_MAX = 10; // max messages per window per channel
+  const rateLimitMap = new Map<string, number[]>();
+
+  function isRateLimited(chatJid: string): boolean {
+    const now = Date.now();
+    const timestamps = rateLimitMap.get(chatJid) ?? [];
+    const recent = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+    if (recent.length >= RATE_LIMIT_MAX) {
+      rateLimitMap.set(chatJid, recent);
+      return true;
+    }
+    recent.push(now);
+    rateLimitMap.set(chatJid, recent);
+    return false;
+  }
+
   groups = db.getRegisteredGroups();
   for (const channel of registry.getAll()) {
     channel.onInboundMessage((msg: NewMessage) => {
       logger.debug({ chatJid: msg.chat_jid, sender: msg.sender, is_from_me: msg.is_from_me }, `Inbound message: ${msg.content.slice(0, 80)}`);
       db.storeMessage(msg);
-
-      // Sender/channel allowlist (empty = allow all for backward compat)
-      if (config.allowedChannels.size > 0 && !config.allowedChannels.has(msg.chat_jid)) {
-        logger.debug({ chatJid: msg.chat_jid }, 'Channel not in allowlist, skipping');
-        return;
-      }
-      if (config.allowedSenders.size > 0 && !config.allowedSenders.has(msg.sender)) {
-        logger.debug({ sender: msg.sender }, 'Sender not in allowlist, skipping');
-        return;
-      }
 
       // Find matching group
       const group = groups.find((g) => {
@@ -125,6 +131,13 @@ async function main(): Promise<void> {
       logger.debug({ group: group?.folder, is_from_me: msg.is_from_me, groupCount: groups.length }, 'Group match result');
 
       if (!group || msg.is_from_me) return;
+
+      // Rate limit: prevent message flooding per channel
+      if (isRateLimited(msg.chat_jid)) {
+        logger.warn({ chatJid: msg.chat_jid }, 'Rate limited — too many messages in window');
+        return;
+      }
+
       logger.info({ groupFolder: group.folder, chatJid: msg.chat_jid }, 'Enqueuing message for processing');
 
       // Get context messages
