@@ -12,6 +12,10 @@ import { TaskScheduler } from './task-scheduler.js';
 import { IpcWatcher } from './ipc.js';
 import { SkillLoader } from './skills/loader.js';
 import { randomUUID } from 'node:crypto';
+import { TrustScorer } from './trust-scorer.js';
+import { TaskLifecycleManager } from './task-lifecycle.js';
+import { SlackInteraction } from './channels/slack-interaction.js';
+import type { SlackChannel } from './channels/slack.js';
 import type { NewMessage, RegisteredGroup } from './types.js';
 
 async function main(): Promise<void> {
@@ -44,9 +48,40 @@ async function main(): Promise<void> {
   const skillLoader = new SkillLoader('./skills', logger);
   skillLoader.loadAll();
 
-  // 3. Connect channels
+  // 2b. Initialize lifecycle components
   registry.initialize({ config, db, logger });
+
+  const trustScorer = new TrustScorer();
+  const slackChannel = registry.getAll().find((c) => c.name === 'slack') as SlackChannel | undefined;
+  let lifecycleManager: TaskLifecycleManager | null = null;
+
+  if (slackChannel) {
+    const slackInteraction = new SlackInteraction(slackChannel.getApp(), logger);
+    lifecycleManager = new TaskLifecycleManager(db, queue, slackInteraction, trustScorer, logger, {
+      slackBotToken: config.slackBotToken!,
+      approvalTimeoutMs: 3600000,
+      feedbackTimeoutMs: 86400000,
+    });
+    scheduler.setLifecycleManager(lifecycleManager);
+
+    slackInteraction.registerHandlers({
+      onApprove: (runId, userId) => lifecycleManager!.handleApproval(runId, userId),
+      onReject: (runId, userId, reason) => lifecycleManager!.handleRejection(runId, userId, reason),
+      onRevise: (runId, userId, instruction) => lifecycleManager!.handleRevisionRequest(runId, userId, instruction),
+      onFeedbackScore: (runId, score) => lifecycleManager!.handleFeedback(runId, score),
+      onFeedbackComment: (runId, comment) => lifecycleManager!.handleFeedback(runId, 0, comment),
+    });
+
+    logger.info({}, 'Task lifecycle manager initialized with Slack interaction');
+  }
+
+  // 3. Connect channels
   await registry.connectAll();
+
+  // 3b. Recover pending lifecycle runs from previous session
+  if (lifecycleManager) {
+    await lifecycleManager.recoverPendingRuns();
+  }
 
   // 4. Bootstrap main group if none exist
   let groups = db.getRegisteredGroups();
@@ -90,6 +125,12 @@ async function main(): Promise<void> {
           last_result: null,
           status: 'active',
           created_at: new Date().toISOString(),
+          trust_score: 0,
+          consecutive_successes: 0,
+          total_positive_feedback: 0,
+          total_runs: 0,
+          approval_mode: 'required',
+          approval_mode_locked: false,
         });
         logger.info({ task: t.name }, 'Autonomous task registered');
       }
@@ -209,6 +250,7 @@ async function main(): Promise<void> {
     }
     logger.info({}, 'Shutting down gracefully...');
     running = false;
+    if (lifecycleManager) lifecycleManager.shutdown();
     ipcWatcher.stop();
     await queue.shutdown();
     await registry.disconnectAll();
