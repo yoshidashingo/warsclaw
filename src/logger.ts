@@ -3,10 +3,15 @@ type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 const LEVELS: Record<LogLevel, number> = { debug: 0, info: 1, warn: 2, error: 3 };
 
 const SECRET_PATTERNS = [
-  /sk-ant-[a-zA-Z0-9-]+/g,
-  /xoxb-[a-zA-Z0-9-]+/g,
-  /xapp-[a-zA-Z0-9-]+/g,
-  /[A-Za-z0-9]{24,}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{27,}/g,
+  /sk-ant-[a-zA-Z0-9-]+/g,                                       // Anthropic API keys
+  /xoxb-[a-zA-Z0-9-]+/g,                                         // Slack bot tokens
+  /xapp-[a-zA-Z0-9-]+/g,                                         // Slack app tokens
+  /[A-Za-z0-9]{24,}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{27,}/g,   // Discord bot tokens
+  /AKIA[0-9A-Z]{16}/g,                                           // AWS access key IDs
+  /(?:aws_secret_access_key|AWS_SECRET_ACCESS_KEY)\s*[=:]\s*\S+/g, // AWS secret access keys (key=value form)
+  /ghp_[a-zA-Z0-9]{36}/g,                                        // GitHub PATs
+  /glpat-[a-zA-Z0-9_-]{20,}/g,                                   // GitLab PATs
+  /Bearer\s+[A-Za-z0-9\-._~+/]+=*/g,                             // Bearer tokens
 ];
 
 export function maskSecrets(str: string): string {

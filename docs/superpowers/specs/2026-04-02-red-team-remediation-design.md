@@ -38,7 +38,7 @@ Three parallel streams via git worktree, grouped by concern to minimize merge co
 | ID | Issue | Fix |
 |----|-------|-----|
 | C3 | `activeCount` double-decrement in recursive retry | Replace recursion with `for` loop; `finally` runs once |
-| C4 | Session resumption never works | Use `--resume` with session ID passed via `ContainerInput.sessionId`; after CLI execution, parse session ID from Claude CLI output or use `--session-id` flag with deterministic ID `myclaw-{groupFolder}`; return used ID in `newSessionId` field |
+| C4 | Session resumption never works | Use `--resume` with session ID passed via `ContainerInput.sessionId`; after CLI execution, parse session ID from Claude CLI output or use `--session-id` flag with deterministic ID `warsclaw-{groupFolder}`; return used ID in `newSessionId` field |
 | H6 | IPC `schedule_task` sets empty `group_folder` | Add `group_folder: GroupFolderSchema` to `IpcTaskSchema`; use in handler |
 | H7 | Floating promise in IPC `setInterval` | Replace with recursive `setTimeout` that waits for async completion |
 | H8 | `onComplete` error triggers full container retry | Wrap `onComplete` in separate try/catch; don't retry on callback failure |

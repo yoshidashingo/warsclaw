@@ -1,22 +1,22 @@
-# Infrastructure Design - MyClaw
+# Infrastructure Design - WarsClaw
 
 ## Infrastructure Overview
 
-MyClaw はクラウドサービスに依存しないローカルファーストのアーキテクチャ。Docker コンテナとしてどこでもデプロイ可能。
+WarsClaw はクラウドサービスに依存しないローカルファーストのアーキテクチャ。Docker コンテナとしてどこでもデプロイ可能。
 
 ```mermaid
 graph TB
     subgraph Host["Host Machine (any OS)"]
         subgraph DockerEngine["Docker Engine"]
-            subgraph MyClawContainer["myclaw container"]
-                NODE[Node.js 22<br/>MyClaw Main Process]
-                SQLITE[(SQLite DB<br/>data/myclaw.db)]
+            subgraph WarsClawContainer["warsclaw container"]
+                NODE[Node.js 22<br/>WarsClaw Main Process]
+                SQLITE[(SQLite DB<br/>data/warsclaw.db)]
             end
 
             subgraph AgentContainers["Agent Containers (ephemeral)"]
-                A1[myclaw-agent<br/>Group A]
-                A2[myclaw-agent<br/>Group B]
-                A3[myclaw-agent<br/>Group C]
+                A1[warsclaw-agent<br/>Group A]
+                A2[warsclaw-agent<br/>Group B]
+                A3[warsclaw-agent<br/>Group C]
             end
         end
 
@@ -33,9 +33,9 @@ graph TB
 
     NODE -->|docker.sock| AgentContainers
     NODE --> SQLITE
-    MyClawContainer ---|volume| DATA
-    MyClawContainer ---|volume| GROUPS
-    MyClawContainer ---|volume| DOCKER_SOCK
+    WarsClawContainer ---|volume| DATA
+    WarsClawContainer ---|volume| GROUPS
+    WarsClawContainer ---|volume| DOCKER_SOCK
     AgentContainers ---|RO mount| GROUPS
     AgentContainers ---|RW mount| GROUPS
 
@@ -46,16 +46,16 @@ graph TB
 
 ## Compute Infrastructure
 
-### MyClaw Main Process
+### WarsClaw Main Process
 - **Runtime**: Node.js 22 LTS in Docker container
-- **Image**: `myclaw:latest` (node:22-slim base)
+- **Image**: `warsclaw:latest` (node:22-slim base)
 - **Resources**: ~100MB RAM, minimal CPU
 - **Restart Policy**: `unless-stopped`
 - **Networking**: Host network (channel API通信)
 
 ### Agent Containers
 - **Runtime**: Node.js 22 + Chromium in Docker container
-- **Image**: `myclaw-agent:latest` (node:22-slim base + chromium)
+- **Image**: `warsclaw-agent:latest` (node:22-slim base + chromium)
 - **Resources**: 512MB RAM limit, 1 CPU limit per container
 - **Lifecycle**: Ephemeral (`--rm`), created per message
 - **Max Concurrent**: 5 (configurable)
@@ -64,7 +64,7 @@ graph TB
 ## Storage Infrastructure
 
 ### SQLite Database
-- **Path**: `data/myclaw.db`
+- **Path**: `data/warsclaw.db`
 - **Mode**: WAL (Write-Ahead Logging)
 - **Backup**: ファイルコピーで完結 (SQLite hot backup)
 - **Size Estimate**: < 100MB for typical usage
@@ -102,9 +102,9 @@ graph TB
 # docker-compose.yml
 version: '3.8'
 services:
-  myclaw:
+  warsclaw:
     build: .
-    container_name: myclaw
+    container_name: warsclaw
     volumes:
       - ./data:/app/data
       - ./groups:/app/groups
@@ -120,18 +120,18 @@ services:
 
 ### launchd (macOS, non-Docker)
 ```xml
-<!-- ~/Library/LaunchAgents/com.myclaw.agent.plist -->
+<!-- ~/Library/LaunchAgents/com.warsclaw.agent.plist -->
 <plist version="1.0">
 <dict>
-    <key>Label</key><string>com.myclaw.agent</string>
+    <key>Label</key><string>com.warsclaw.agent</string>
     <key>ProgramArguments</key>
     <array>
         <string>/usr/local/bin/node</string>
-        <string>/path/to/myclaw/dist/index.js</string>
+        <string>/path/to/warsclaw/dist/index.js</string>
     </array>
     <key>RunAtLoad</key><true/>
     <key>KeepAlive</key><true/>
-    <key>WorkingDirectory</key><string>/path/to/myclaw</string>
+    <key>WorkingDirectory</key><string>/path/to/warsclaw</string>
     <key>EnvironmentVariables</key>
     <dict>
         <key>NODE_ENV</key><string>production</string>
@@ -142,19 +142,19 @@ services:
 
 ### systemd (Linux, non-Docker)
 ```ini
-# /etc/systemd/system/myclaw.service
+# /etc/systemd/system/warsclaw.service
 [Unit]
-Description=MyClaw Personal Agent
+Description=WarsClaw Personal Agent
 After=network.target docker.service
 
 [Service]
 Type=simple
-User=myclaw
-WorkingDirectory=/opt/myclaw
+User=warsclaw
+WorkingDirectory=/opt/warsclaw
 ExecStart=/usr/bin/node dist/index.js
 Restart=on-failure
 RestartSec=5
-EnvironmentFile=/opt/myclaw/.env
+EnvironmentFile=/opt/warsclaw/.env
 
 [Install]
 WantedBy=multi-user.target
@@ -177,16 +177,16 @@ SLACK_APP_TOKEN=xapp-...           # Slack app-level token
 
 ### Optional Environment Variables
 ```bash
-MYCLAW_POLLING_INTERVAL=2000       # Message poll interval (ms)
-MYCLAW_IPC_INTERVAL=1000           # IPC poll interval (ms)
-MYCLAW_MAX_CONTAINERS=5            # Max concurrent containers
-MYCLAW_MAX_RETRIES=5               # Max retry attempts
-MYCLAW_TIMEZONE=Asia/Tokyo         # IANA timezone
-MYCLAW_DOCKER_IMAGE=myclaw-agent   # Agent container image
-MYCLAW_DATA_DIR=./data             # Data directory
-MYCLAW_GROUPS_DIR=./groups         # Groups directory
-MYCLAW_ASSISTANT_NAME=MyClaw       # Bot display name
-MYCLAW_LOG_LEVEL=info              # Log level
+WARSCLAW_POLLING_INTERVAL=2000       # Message poll interval (ms)
+WARSCLAW_IPC_INTERVAL=1000           # IPC poll interval (ms)
+WARSCLAW_MAX_CONTAINERS=5            # Max concurrent containers
+WARSCLAW_MAX_RETRIES=5               # Max retry attempts
+WARSCLAW_TIMEZONE=Asia/Tokyo         # IANA timezone
+WARSCLAW_DOCKER_IMAGE=warsclaw-agent   # Agent container image
+WARSCLAW_DATA_DIR=./data             # Data directory
+WARSCLAW_GROUPS_DIR=./groups         # Groups directory
+WARSCLAW_ASSISTANT_NAME=WarsClaw       # Bot display name
+WARSCLAW_LOG_LEVEL=info              # Log level
 ```
 
 ## Build & Deploy Pipeline
@@ -201,10 +201,10 @@ npm run dev                  # tsx watch mode
 ### Docker Build
 ```bash
 # Build agent image
-docker build -t myclaw-agent -f container/Dockerfile .
+docker build -t warsclaw-agent -f container/Dockerfile .
 
 # Build main image
-docker build -t myclaw .
+docker build -t warsclaw .
 
 # Start
 docker compose up -d
@@ -213,7 +213,7 @@ docker compose up -d
 ### Production Deploy
 ```bash
 # Clone and configure
-git clone <repo> && cd myclaw
+git clone <repo> && cd warsclaw
 cp .env.example .env
 # Edit .env with tokens
 

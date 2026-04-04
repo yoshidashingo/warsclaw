@@ -1,5 +1,5 @@
 import BetterSqlite3 from 'better-sqlite3';
-import type { NewMessage, ScheduledTask, TaskRunLog, RegisteredGroup } from './types.js';
+import type { NewMessage, ScheduledTask, TaskRunLog, RegisteredGroup, TaskRun } from './types.js';
 
 export class Database {
   private readonly db: BetterSqlite3.Database;
@@ -80,7 +80,44 @@ export class Database {
         chat_jid TEXT PRIMARY KEY,
         last_processed_timestamp INTEGER NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS task_runs (
+        id TEXT PRIMARY KEY,
+        task_id TEXT NOT NULL,
+        state TEXT NOT NULL,
+        plan TEXT,
+        plan_slack_ts TEXT,
+        plan_channel_id TEXT,
+        approval_by TEXT,
+        approval_at INTEGER,
+        rejection_reason TEXT,
+        result TEXT,
+        report TEXT,
+        report_slack_ts TEXT,
+        feedback_score INTEGER,
+        feedback_comment TEXT,
+        started_at INTEGER NOT NULL,
+        finished_at INTEGER,
+        created_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_task_runs_task_id ON task_runs(task_id);
+      CREATE INDEX IF NOT EXISTS idx_task_runs_state ON task_runs(state);
     `);
+    this.migrateSchema();
+  }
+
+  private migrateSchema(): void {
+    const migrations = [
+      `ALTER TABLE scheduled_tasks ADD COLUMN trust_score REAL NOT NULL DEFAULT 0.0`,
+      `ALTER TABLE scheduled_tasks ADD COLUMN consecutive_successes INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE scheduled_tasks ADD COLUMN total_positive_feedback INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE scheduled_tasks ADD COLUMN total_runs INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE scheduled_tasks ADD COLUMN approval_mode TEXT NOT NULL DEFAULT 'required'`,
+      `ALTER TABLE scheduled_tasks ADD COLUMN approval_mode_locked INTEGER NOT NULL DEFAULT 0`,
+    ];
+    for (const sql of migrations) {
+      try { this.db.exec(sql); } catch { /* column already exists */ }
+    }
   }
 
   // --- Messages ---
@@ -126,6 +163,10 @@ export class Database {
     return this.db.prepare(`SELECT * FROM scheduled_tasks`).all() as ScheduledTask[];
   }
 
+  getTask(taskId: string): ScheduledTask | null {
+    return (this.db.prepare(`SELECT * FROM scheduled_tasks WHERE id = ?`).get(taskId) as ScheduledTask) ?? null;
+  }
+
   getDueTasks(): ScheduledTask[] {
     return this.db.prepare(`SELECT * FROM scheduled_tasks WHERE status = 'active' AND next_run IS NOT NULL AND next_run <= ?`)
       .all(new Date().toISOString()) as ScheduledTask[];
@@ -137,21 +178,76 @@ export class Database {
       .run(task.id, task.group_folder, task.chat_jid, task.prompt, task.script, task.schedule_type, task.schedule_value, task.context_mode, task.next_run, task.last_run, task.last_result, task.status, task.created_at);
   }
 
-  private static readonly TASK_UPDATABLE_FIELDS = new Set([
-    'prompt', 'script', 'schedule_type', 'schedule_value', 'context_mode',
-    'next_run', 'last_run', 'last_result', 'status',
+  /** Static map of allowed column names — prevents SQL identifier injection */
+  private static readonly TASK_COLUMN_SQL = new Map<string, string>([
+    ['prompt', 'UPDATE scheduled_tasks SET prompt = ? WHERE id = ?'],
+    ['script', 'UPDATE scheduled_tasks SET script = ? WHERE id = ?'],
+    ['schedule_type', 'UPDATE scheduled_tasks SET schedule_type = ? WHERE id = ?'],
+    ['schedule_value', 'UPDATE scheduled_tasks SET schedule_value = ? WHERE id = ?'],
+    ['context_mode', 'UPDATE scheduled_tasks SET context_mode = ? WHERE id = ?'],
+    ['next_run', 'UPDATE scheduled_tasks SET next_run = ? WHERE id = ?'],
+    ['last_run', 'UPDATE scheduled_tasks SET last_run = ? WHERE id = ?'],
+    ['last_result', 'UPDATE scheduled_tasks SET last_result = ? WHERE id = ?'],
+    ['status', 'UPDATE scheduled_tasks SET status = ? WHERE id = ?'],
+    ['trust_score', 'UPDATE scheduled_tasks SET trust_score = ? WHERE id = ?'],
+    ['consecutive_successes', 'UPDATE scheduled_tasks SET consecutive_successes = ? WHERE id = ?'],
+    ['total_positive_feedback', 'UPDATE scheduled_tasks SET total_positive_feedback = ? WHERE id = ?'],
+    ['total_runs', 'UPDATE scheduled_tasks SET total_runs = ? WHERE id = ?'],
+    ['approval_mode', 'UPDATE scheduled_tasks SET approval_mode = ? WHERE id = ?'],
+    ['approval_mode_locked', 'UPDATE scheduled_tasks SET approval_mode_locked = ? WHERE id = ?'],
   ]);
 
   updateTask(taskId: string, updates: Partial<ScheduledTask>): void {
-    const fields = Object.entries(updates)
-      .filter(([k, v]) => v !== undefined && Database.TASK_UPDATABLE_FIELDS.has(k));
-    if (fields.length === 0) return;
-    const setClause = fields.map(([k]) => `${k} = ?`).join(', ');
-    this.db.prepare(`UPDATE scheduled_tasks SET ${setClause} WHERE id = ?`).run(...fields.map(([, v]) => v), taskId);
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === undefined) continue;
+      const sql = Database.TASK_COLUMN_SQL.get(key);
+      if (!sql) continue;
+      this.db.prepare(sql).run(value, taskId);
+    }
+  }
+
+  getTaskGroupFolder(taskId: string): string | null {
+    const row = this.db.prepare(`SELECT group_folder FROM scheduled_tasks WHERE id = ?`).get(taskId) as any;
+    return row?.group_folder ?? null;
   }
 
   deleteTask(taskId: string): void {
     this.db.prepare(`DELETE FROM scheduled_tasks WHERE id = ?`).run(taskId);
+  }
+
+  // --- Task Runs ---
+  createTaskRun(run: TaskRun): void {
+    this.db.prepare(`INSERT INTO task_runs (id, task_id, state, plan, plan_slack_ts, plan_channel_id,
+      approval_by, approval_at, rejection_reason, result, report, report_slack_ts,
+      feedback_score, feedback_comment, started_at, finished_at, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(run.id, run.task_id, run.state, run.plan, run.plan_slack_ts, run.plan_channel_id,
+        run.approval_by, run.approval_at, run.rejection_reason, run.result, run.report,
+        run.report_slack_ts, run.feedback_score, run.feedback_comment,
+        run.started_at, run.finished_at, run.created_at);
+  }
+
+  getTaskRun(runId: string): TaskRun | null {
+    return (this.db.prepare(`SELECT * FROM task_runs WHERE id = ?`).get(runId) as TaskRun) ?? null;
+  }
+
+  getTaskRunsByState(...states: string[]): TaskRun[] {
+    const placeholders = states.map(() => '?').join(',');
+    return this.db.prepare(`SELECT * FROM task_runs WHERE state IN (${placeholders})`).all(...states) as TaskRun[];
+  }
+
+  getLastTaskRun(taskId: string): TaskRun | null {
+    return (this.db.prepare(`SELECT * FROM task_runs WHERE task_id = ? ORDER BY created_at DESC LIMIT 1`).get(taskId) as TaskRun) ?? null;
+  }
+
+  updateTaskRun(runId: string, updates: Partial<TaskRun>): void {
+    const allowed = ['state', 'plan', 'plan_slack_ts', 'plan_channel_id', 'approval_by',
+      'approval_at', 'rejection_reason', 'result', 'report', 'report_slack_ts',
+      'feedback_score', 'feedback_comment', 'finished_at'] as const;
+    for (const key of allowed) {
+      if (updates[key] === undefined) continue;
+      this.db.prepare(`UPDATE task_runs SET ${key} = ? WHERE id = ?`).run(updates[key], runId);
+    }
   }
 
   logTaskRun(log: TaskRunLog): void {

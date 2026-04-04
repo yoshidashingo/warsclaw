@@ -1,4 +1,4 @@
-# Tech Stack Decisions - MyClaw
+# Tech Stack Decisions - WarsClaw
 
 ## Final Tech Stack
 

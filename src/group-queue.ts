@@ -67,12 +67,14 @@ export class GroupQueue {
   }
 
   private processNext(): void {
+    this.logger.debug({ activeCount: this.activeCount, maxConcurrent: this.maxConcurrent, queueSize: this.queues.size }, 'processNext called');
     if (this.activeCount >= this.maxConcurrent) return;
     for (const [group, queue] of this.queues) {
       if (queue.length === 0 || this.activeGroups.has(group)) continue;
       const task = queue.shift()!;
       this.activeGroups.add(group);
       this.activeCount++;
+      this.logger.debug({ group, attempt: 0 }, 'Starting executeWithRetry');
       void this.executeWithRetry(task);
       if (this.activeCount >= this.maxConcurrent) break;
     }

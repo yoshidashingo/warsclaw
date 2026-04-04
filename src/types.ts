@@ -113,6 +113,7 @@ export interface IpcDeps {
   scheduler: import('./task-scheduler.js').TaskScheduler;
   logger: import('./logger.js').Logger;
   ipcDir: string;
+  groupsDir: string;
 }
 
 // --- Skill Types ---
@@ -124,11 +125,15 @@ export interface Skill {
 
 // --- Zod Schemas ---
 
-export const GroupFolderSchema = z
+/** Safe folder name pattern — prevents path traversal */
+export const SafeFolderSchema = z
   .string()
   .min(1)
   .max(64)
-  .regex(/^[a-zA-Z0-9_-]+$/, 'Only alphanumeric, hyphens, and underscores')
+  .regex(/^[a-zA-Z0-9_-]+$/, 'Only alphanumeric, hyphens, and underscores');
+
+/** For IPC group registration — additionally rejects reserved names */
+export const GroupFolderSchema = SafeFolderSchema
   .refine((name) => !['main', 'global', '.', '..'].includes(name), 'Reserved name');
 
 export const IpcMessageSchema = z.object({
@@ -148,20 +153,36 @@ export const IpcTaskSchema = z.discriminatedUnion('type', [
     script: z.string().optional(),
     context_mode: z.enum(['group', 'isolated']).default('group'),
   }),
-  z.object({ type: z.literal('pause_task'), taskId: z.string().min(1) }),
-  z.object({ type: z.literal('resume_task'), taskId: z.string().min(1) }),
-  z.object({ type: z.literal('cancel_task'), taskId: z.string().min(1) }),
+  z.object({ type: z.literal('pause_task'), taskId: z.string().min(1), source_group: z.string().min(1) }),
+  z.object({ type: z.literal('resume_task'), taskId: z.string().min(1), source_group: z.string().min(1) }),
+  z.object({ type: z.literal('cancel_task'), taskId: z.string().min(1), source_group: z.string().min(1) }),
   z.object({
     type: z.literal('update_task'),
     taskId: z.string().min(1),
+    source_group: z.string().min(1),
     prompt: z.string().min(1).max(10000).optional(),
     script: z.string().optional(),
     schedule_type: z.enum(['cron', 'interval', 'once']).optional(),
     schedule_value: z.string().min(1).optional(),
   }),
-  z.object({ type: z.literal('register_group'), jid: z.string().min(1), name: z.string().min(1), folder: GroupFolderSchema, trigger: z.string().min(1) }),
-  z.object({ type: z.literal('refresh_groups') }),
-]);
+  z.object({ type: z.literal('register_group'), jid: z.string().min(1), name: z.string().min(1), folder: GroupFolderSchema, trigger: z.string().min(1), source_group: z.string().min(1) }),
+  z.object({ type: z.literal('refresh_groups'), source_group: z.string().min(1) }),
+]).superRefine((data, ctx) => {
+  if (data.type === 'schedule_task') {
+    if (data.schedule_type === 'interval') {
+      const ms = parseInt(data.schedule_value, 10);
+      if (isNaN(ms) || ms < 60000) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Interval must be >= 60000ms (1 minute)', path: ['schedule_value'] });
+      }
+    }
+    if (data.schedule_type === 'once') {
+      const ts = Date.parse(data.schedule_value);
+      if (isNaN(ts) || ts <= Date.now()) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Once schedule_value must be a future ISO date', path: ['schedule_value'] });
+      }
+    }
+  }
+});
 
 export const ContainerOutputSchema = z.object({
   status: z.enum(['success', 'error']),
@@ -169,3 +190,38 @@ export const ContainerOutputSchema = z.object({
   newSessionId: z.string().optional(),
   error: z.string().optional(),
 });
+
+// --- Task Run Types ---
+
+export interface TaskRun {
+  id: string;
+  task_id: string;
+  state: string;
+  plan: string | null;
+  plan_slack_ts: string | null;
+  plan_channel_id: string | null;
+  approval_by: string | null;
+  approval_at: number | null;
+  rejection_reason: string | null;
+  result: string | null;
+  report: string | null;
+  report_slack_ts: string | null;
+  feedback_score: number | null;
+  feedback_comment: string | null;
+  started_at: number;
+  finished_at: number | null;
+  created_at: number;
+}
+
+// --- Trust / Approval Types ---
+
+export type ApprovalMode = 'required' | 'notify_only' | 'auto';
+
+export interface TaskTrustFields {
+  consecutive_successes: number;
+  total_positive_feedback: number;
+  total_runs: number;
+  trust_score: number;
+  approval_mode: ApprovalMode;
+  approval_mode_locked: boolean;
+}

@@ -114,7 +114,7 @@ graph LR
         DOCKER[Docker Daemon]
     end
 
-    subgraph MyClaw
+    subgraph WarsClaw
         CH[Channels]
         RT[Router]
         GQ[GroupQueue]

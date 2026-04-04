@@ -90,20 +90,41 @@ export class IpcWatcher {
         });
         break;
       case 'pause_task':
+        if (!this.canManageTask(task.taskId, task.source_group)) {
+          this.deps.logger.warn({ taskId: task.taskId, source_group: task.source_group }, 'Unauthorized pause_task — source_group does not own task');
+          break;
+        }
         this.deps.scheduler.pauseTask(task.taskId);
         break;
       case 'resume_task':
+        if (!this.canManageTask(task.taskId, task.source_group)) {
+          this.deps.logger.warn({ taskId: task.taskId, source_group: task.source_group }, 'Unauthorized resume_task — source_group does not own task');
+          break;
+        }
         this.deps.scheduler.resumeTask(task.taskId);
         break;
       case 'cancel_task':
+        if (!this.canManageTask(task.taskId, task.source_group)) {
+          this.deps.logger.warn({ taskId: task.taskId, source_group: task.source_group }, 'Unauthorized cancel_task — source_group does not own task');
+          break;
+        }
         this.deps.scheduler.cancelTask(task.taskId);
         break;
       case 'update_task': {
-        const { taskId, type: _, ...updates } = task;
+        if (!this.canManageTask(task.taskId, task.source_group)) {
+          this.deps.logger.warn({ taskId: task.taskId, source_group: task.source_group }, 'Unauthorized update_task — source_group does not own task');
+          break;
+        }
+        const { taskId, type: _, source_group: _sg, ...updates } = task;
         this.deps.scheduler.updateTask(taskId, updates);
         break;
       }
       case 'register_group': {
+        // NFR-01.4: Only main group can perform admin operations
+        if (!this.isFromMainGroup(task)) {
+          this.deps.logger.warn({ folder: task.folder }, 'Unauthorized register_group attempt — not from main group IPC');
+          break;
+        }
         this.deps.db.registerGroup({
           name: task.name,
           folder: task.folder,
@@ -113,14 +134,38 @@ export class IpcWatcher {
           requires_trigger: true,
           timeout: 300,
         });
-        mkdirSync(join(this.deps.ipcDir, '..', 'groups', task.folder), { recursive: true });
+        mkdirSync(join(this.deps.groupsDir, task.folder), { recursive: true });
         this.deps.logger.info({ folder: task.folder }, 'Group registered via IPC');
         break;
       }
       case 'refresh_groups':
+        // NFR-01.4: Only main group can perform admin operations
+        if (!this.isFromMainGroup(task)) {
+          this.deps.logger.warn({}, 'Unauthorized refresh_groups attempt — not from main group IPC');
+          break;
+        }
         this.deps.logger.info({}, 'Groups refresh requested via IPC');
         break;
     }
+  }
+
+  /** Check if source_group owns the task or is the main group */
+  private canManageTask(taskId: string, sourceGroup: string): boolean {
+    // Main group can manage any task
+    const groups = this.deps.db.getRegisteredGroups();
+    const mainGroup = groups.find((g) => g.is_main);
+    if (mainGroup && sourceGroup === mainGroup.folder) return true;
+    // Non-main groups can only manage their own tasks
+    const taskGroup = this.deps.db.getTaskGroupFolder(taskId);
+    return taskGroup === sourceGroup;
+  }
+
+  /** NFR-01.4: Admin IPC operations require origin from the main group */
+  private isFromMainGroup(task: { source_group: string }): boolean {
+    const groups = this.deps.db.getRegisteredGroups();
+    const mainGroup = groups.find((g) => g.is_main);
+    if (!mainGroup) return false;
+    return task.source_group === mainGroup.folder;
   }
 
   private quarantine(filePath: string, fileName: string): void {

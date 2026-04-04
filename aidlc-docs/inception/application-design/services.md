@@ -2,7 +2,7 @@
 
 ## Service Architecture
 
-MyClaw は単一プロセスのサービスアーキテクチャを採用。Orchestrator がすべてのコンポーネントを統合し、ポーリングベースのイベントループで駆動する。
+WarsClaw は単一プロセスのサービスアーキテクチャを採用。Orchestrator がすべてのコンポーネントを統合し、ポーリングベースのイベントループで駆動する。
 
 ```mermaid
 sequenceDiagram

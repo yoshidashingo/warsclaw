@@ -1,4 +1,4 @@
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, chmodSync } from 'node:fs';
 import { Config } from './config.js';
 import { Logger } from './logger.js';
 import { Database } from './db.js';
@@ -19,15 +19,16 @@ async function main(): Promise<void> {
   const config = Config.fromEnv();
   const logLevel = (['debug', 'info', 'warn', 'error'].includes(config.logLevel) ? config.logLevel : 'info') as 'debug' | 'info' | 'warn' | 'error';
   const logger = new Logger(logLevel);
-  logger.info({}, `MyClaw starting (polling=${config.pollingInterval}ms, maxContainers=${config.maxConcurrentContainers})`);
+  logger.info({}, `WarsClaw starting (polling=${config.pollingInterval}ms, maxContainers=${config.maxConcurrentContainers})`);
 
   // Ensure directories
   for (const dir of [config.dataDir, config.groupsDir, config.ipcDir]) {
-    mkdirSync(dir, { recursive: true });
+    mkdirSync(dir, { recursive: true, mode: 0o700 });
   }
 
   const db = new Database(config.dbPath);
   db.init();
+  try { chmodSync(config.dbPath, 0o600); } catch { /* first run */ }
 
   // 2. Initialize components
   const registry = new ChannelRegistry();
@@ -38,7 +39,7 @@ async function main(): Promise<void> {
   const runner = new ContainerRunner(config, logger);
   const queue = new GroupQueue(runner, logger, config.maxConcurrentContainers, config.maxRetries);
   const scheduler = new TaskScheduler(db, queue, logger, config.timezone);
-  const ipcWatcher = new IpcWatcher({ db, router, scheduler, logger, ipcDir: config.ipcDir });
+  const ipcWatcher = new IpcWatcher({ db, router, scheduler, logger, ipcDir: config.ipcDir, groupsDir: config.groupsDir });
 
   const skillLoader = new SkillLoader('./skills', logger);
   skillLoader.loadAll();
@@ -95,8 +96,24 @@ async function main(): Promise<void> {
     }
   }
 
-  // 6. Set up message handling
-  //    MyClaw monitors Slack continuously — every message triggers agent processing
+  // 6. Set up message handling with rate limiting
+  const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
+  const RATE_LIMIT_MAX = 10; // max messages per window per channel
+  const rateLimitMap = new Map<string, number[]>();
+
+  function isRateLimited(chatJid: string): boolean {
+    const now = Date.now();
+    const timestamps = rateLimitMap.get(chatJid) ?? [];
+    const recent = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+    if (recent.length >= RATE_LIMIT_MAX) {
+      rateLimitMap.set(chatJid, recent);
+      return true;
+    }
+    recent.push(now);
+    rateLimitMap.set(chatJid, recent);
+    return false;
+  }
+
   groups = db.getRegisteredGroups();
   for (const channel of registry.getAll()) {
     channel.onInboundMessage((msg: NewMessage) => {
@@ -114,6 +131,13 @@ async function main(): Promise<void> {
       logger.debug({ group: group?.folder, is_from_me: msg.is_from_me, groupCount: groups.length }, 'Group match result');
 
       if (!group || msg.is_from_me) return;
+
+      // Rate limit: prevent message flooding per channel
+      if (isRateLimited(msg.chat_jid)) {
+        logger.warn({ chatJid: msg.chat_jid }, 'Rate limited — too many messages in window');
+        return;
+      }
+
       logger.info({ groupFolder: group.folder, chatJid: msg.chat_jid }, 'Enqueuing message for processing');
 
       // Get context messages
@@ -196,7 +220,7 @@ async function main(): Promise<void> {
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
 
-  logger.info({}, 'MyClaw is running');
+  logger.info({}, 'WarsClaw is running');
   await pollLoop();
 }
 

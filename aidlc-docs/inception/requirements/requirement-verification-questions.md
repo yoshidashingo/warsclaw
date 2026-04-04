@@ -1,12 +1,12 @@
 # Requirements Clarification Questions
 
-Please answer the following questions to help clarify the requirements for MyClaw.
+Please answer the following questions to help clarify the requirements for WarsClaw.
 Each question has multiple choice options. Fill in the letter after [Answer]: tag.
 
 ---
 
 ## Question 1
-MyClawの最初のリリースでサポートするメッセージングチャネルはどれですか？
+WarsClawの最初のリリースでサポートするメッセージングチャネルはどれですか？
 
 A) Discord のみ
 B) Slack のみ
@@ -24,7 +24,7 @@ B) OpenAI のみ
 C) Claude + OpenAI (マルチプロバイダー)
 D) Other (please describe after [Answer]: tag below)
 
-[Answer]: D — MyClawのフォルダ内でclaude codeを実行することで稼働する形にする
+[Answer]: D — WarsClawのフォルダ内でclaude codeを実行することで稼働する形にする
 
 ## Question 3
 エージェント実行の隔離方式はどれを採用しますか？

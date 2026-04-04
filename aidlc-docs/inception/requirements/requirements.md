@@ -1,4 +1,4 @@
-# MyClaw Requirements
+# WarsClaw Requirements
 
 ## Intent Analysis
 
@@ -20,7 +20,7 @@
 - **FR-01.5**: チャネルはファイルベースのスキルシステムで追加可能とする
 
 ### FR-02: エージェント実行
-- **FR-02.1**: Claude Code をエージェントランタイムとして使用する (MyClawフォルダ内で実行)
+- **FR-02.1**: Claude Code をエージェントランタイムとして使用する (WarsClawフォルダ内で実行)
 - **FR-02.2**: Docker コンテナ内でエージェントを隔離実行する
 - **FR-02.3**: グループごとに独立したコンテキスト (CLAUDE.md, セッション, ファイル) をマウントする
 - **FR-02.4**: エージェント出力をマーカーベースで確実にパースする
@@ -120,7 +120,7 @@
 |----------|--------|-----------|
 | Language | TypeScript (strict) | OpenClaw/NanoClaw と同じ、型安全性 |
 | Runtime | Node.js 22+ | LTS、Docker base image利用可能 |
-| Agent | Claude Code | MyClawフォルダ内でclaude code実行 |
+| Agent | Claude Code | WarsClawフォルダ内でclaude code実行 |
 | Isolation | Docker container | NanoClaw方式、完全隔離 |
 | Storage | SQLite (better-sqlite3) | 軽量、単一ファイル、同期API |
 | Channels | Discord + Slack | discord.js + @slack/bolt |
@@ -145,7 +145,7 @@
 
 ## Summary
 
-MyClaw は ~2000行以下で構築するパーソナルAIエージェントで、以下の特徴を持つ:
+WarsClaw は ~2000行以下で構築するパーソナルAIエージェントで、以下の特徴を持つ:
 
 - **Claude Code** をエージェントランタイムとして使用
 - **Docker コンテナ** でエージェント実行を隔離

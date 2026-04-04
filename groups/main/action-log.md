@@ -1,5 +1,5 @@
 # Action Log
 
-MyClaw の全行動記録。
+WarsClaw の全行動記録。
 
 ---

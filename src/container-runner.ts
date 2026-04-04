@@ -3,10 +3,12 @@ import { resolve, join } from 'node:path';
 import type { Config } from './config.js';
 import type { Logger } from './logger.js';
 import type { ContainerInput, ContainerOutput } from './types.js';
-import { ContainerOutputSchema } from './types.js';
+import { ContainerOutputSchema, SafeFolderSchema } from './types.js';
 
 const OUTPUT_START = '<<<OUTPUT_START>>>';
 const OUTPUT_END = '<<<OUTPUT_END>>>';
+
+export const MAX_OUTPUT_BYTES = 10 * 1024 * 1024; // 10MB
 
 export function parseContainerOutput(stdout: string): ContainerOutput {
   const startIdx = stdout.indexOf(OUTPUT_START);
@@ -27,13 +29,18 @@ export class ContainerRunner {
   ) {}
 
   async run(input: ContainerInput): Promise<ContainerOutput> {
+    this.logger.debug({ groupFolder: input.groupFolder }, 'ContainerRunner.run() called');
+
+    // Validate groupFolder to prevent path traversal
+    SafeFolderSchema.parse(input.groupFolder);
+
     const groupFolder = resolve(this.config.groupsDir, input.groupFolder);
     const ipcDir = resolve(this.config.ipcDir);
 
     // Write API key to temp env-file (not visible in docker inspect)
     const { mkdtempSync, writeFileSync, unlinkSync: unlinkTmp, rmdirSync } = await import('node:fs');
     const { tmpdir } = await import('node:os');
-    const envDir = mkdtempSync(join(tmpdir(), 'myclaw-env-'));
+    const envDir = mkdtempSync(join(tmpdir(), 'warsclaw-env-'));
     const envFile = join(envDir, '.env');
     writeFileSync(envFile, `ANTHROPIC_API_KEY=${this.config.anthropicApiKey}\n`, { mode: 0o600 });
 
@@ -61,25 +68,62 @@ export class ContainerRunner {
 
     args.push('-i', this.config.dockerImage);
 
+    const cleanupEnv = (): void => {
+      try { unlinkTmp(envFile); } catch { /* ignore */ }
+      try { rmdirSync(envDir); } catch { /* ignore */ }
+    };
+
+    let proc: ReturnType<typeof spawn>;
+    try {
+      proc = spawn('docker', args, { stdio: ['pipe', 'pipe', 'pipe'] });
+    } catch (err) {
+      cleanupEnv();
+      throw err;
+    }
+
     return new Promise<ContainerOutput>((resolveP, reject) => {
-      const proc = spawn('docker', args, { stdio: ['pipe', 'pipe', 'pipe'] });
       this.activeProcesses.set(input.groupFolder, proc);
 
       let stdout = '';
       let stderr = '';
+      let stdoutBytes = 0;
+      let stderrBytes = 0;
+      let killed = false;
+
       const timeout = setTimeout(() => {
         proc.kill('SIGTERM');
         reject(new Error(`Container timeout after ${timeoutSec}s`));
       }, timeoutSec * 1000);
 
-      proc.stdout?.on('data', (chunk: Buffer) => { stdout += chunk.toString(); });
-      proc.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
+      proc.stdout?.on('data', (chunk: Buffer) => {
+        stdoutBytes += chunk.length;
+        if (stdoutBytes > MAX_OUTPUT_BYTES) {
+          if (!killed) {
+            killed = true;
+            proc.kill('SIGTERM');
+            reject(new Error(`Container stdout exceeded ${MAX_OUTPUT_BYTES} bytes, killed`));
+          }
+          return;
+        }
+        stdout += chunk.toString();
+      });
+      proc.stderr?.on('data', (chunk: Buffer) => {
+        stderrBytes += chunk.length;
+        if (stderrBytes > MAX_OUTPUT_BYTES) {
+          if (!killed) {
+            killed = true;
+            proc.kill('SIGTERM');
+            reject(new Error(`Container stderr exceeded ${MAX_OUTPUT_BYTES} bytes, killed`));
+          }
+          return;
+        }
+        stderr += chunk.toString();
+      });
 
       const cleanup = (): void => {
         clearTimeout(timeout);
         this.activeProcesses.delete(input.groupFolder);
-        try { unlinkTmp(envFile); } catch { /* ignore */ }
-        try { rmdirSync(envDir); } catch { /* ignore */ }
+        cleanupEnv();
       };
 
       proc.on('close', (code) => {

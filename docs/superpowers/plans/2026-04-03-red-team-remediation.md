@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Fix all 26 CRITICAL/HIGH/MEDIUM issues found by Red Team review to make MyClaw production-safe.
+**Goal:** Fix all 26 CRITICAL/HIGH/MEDIUM issues found by Red Team review to make WarsClaw production-safe.
 
 **Architecture:** Three logical streams (Security, Reliability, Code Quality) executed sequentially to avoid merge conflicts on shared files. Each task is self-contained and independently testable.
 
@@ -75,7 +75,7 @@ Replace the entire try block in `main()` (lines 52-83) with:
     }
 
     const stdout = result.stdout ?? '';
-    const sessionId = input.sessionId || `myclaw-${input.groupFolder}`;
+    const sessionId = input.sessionId || `warsclaw-${input.groupFolder}`;
 
     writeOutput({
       status: result.status === 0 ? 'success' : 'error',
@@ -102,7 +102,7 @@ Expected: no errors
 
 - [ ] **Step 3: Run existing tests**
 
-Run: `cd /Users/shingo/Documents/GitHub/oh-my-openclaw && npm test`
+Run: `cd /Users/shingo/Documents/GitHub/warsclaw && npm test`
 Expected: 35 tests pass (agent-runner has no unit tests; container-runner parser tests still pass)
 
 ---
@@ -118,16 +118,16 @@ Replace the entire `docker-compose.yml`:
 
 ```yaml
 services:
-  myclaw:
+  warsclaw:
     build: .
-    container_name: myclaw
+    container_name: warsclaw
     volumes:
       - ./data:/app/data
       - ./groups:/app/groups
       - ./skills:/app/skills
       # NOTE: Docker socket intentionally NOT mounted.
-      # Run MyClaw on the host or use a socket proxy with strict ACLs.
-      - ${MYCLAW_WORKSPACE_DIR:-.}:/app/workspace-repo
+      # Run WarsClaw on the host or use a socket proxy with strict ACLs.
+      - ${WARSCLAW_WORKSPACE_DIR:-.}:/app/workspace-repo
     env_file: .env
     restart: unless-stopped
     logging:
@@ -139,7 +139,7 @@ services:
 
 - [ ] **Step 2: Verify YAML is valid**
 
-Run: `python3 -c "import yaml; yaml.safe_load(open('/Users/shingo/Documents/GitHub/oh-my-openclaw/docker-compose.yml'))"`
+Run: `python3 -c "import yaml; yaml.safe_load(open('/Users/shingo/Documents/GitHub/warsclaw/docker-compose.yml'))"`
 Expected: no error
 
 ---
@@ -193,7 +193,7 @@ Replace the `run` method in `src/container-runner.ts` (lines 29-92):
     // Write API key to temp env-file (not visible in docker inspect)
     const { mkdtempSync, writeFileSync, unlinkSync: unlinkTmp } = await import('node:fs');
     const { tmpdir } = await import('node:os');
-    const envDir = mkdtempSync(join(tmpdir(), 'myclaw-env-'));
+    const envDir = mkdtempSync(join(tmpdir(), 'warsclaw-env-'));
     const envFile = join(envDir, '.env');
     writeFileSync(envFile, `ANTHROPIC_API_KEY=${this.config.anthropicApiKey}\n`, { mode: 0o600 });
 
@@ -976,7 +976,7 @@ Expected: all pass
 
 - [ ] **Step 1: Install ESLint dependencies**
 
-Run: `cd /Users/shingo/Documents/GitHub/oh-my-openclaw && npm install -D @typescript-eslint/parser @typescript-eslint/eslint-plugin eslint`
+Run: `cd /Users/shingo/Documents/GitHub/warsclaw && npm install -D @typescript-eslint/parser @typescript-eslint/eslint-plugin eslint`
 
 - [ ] **Step 2: Create eslint.config.js**
 

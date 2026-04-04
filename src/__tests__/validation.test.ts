@@ -82,12 +82,52 @@ describe('IpcTaskSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('accepts pause_task', () => {
-    expect(IpcTaskSchema.safeParse({ type: 'pause_task', taskId: 'abc' }).success).toBe(true);
+  it('accepts pause_task with source_group', () => {
+    expect(IpcTaskSchema.safeParse({ type: 'pause_task', taskId: 'abc', source_group: 'dev-team' }).success).toBe(true);
+  });
+
+  it('rejects pause_task without source_group', () => {
+    expect(IpcTaskSchema.safeParse({ type: 'pause_task', taskId: 'abc' }).success).toBe(false);
   });
 
   it('rejects unknown type', () => {
     expect(IpcTaskSchema.safeParse({ type: 'unknown' }).success).toBe(false);
+  });
+
+  it('rejects interval < 60000', () => {
+    const result = IpcTaskSchema.safeParse({
+      type: 'schedule_task',
+      prompt: 'test',
+      schedule_type: 'interval',
+      schedule_value: '0',
+      targetJid: 'discord_123',
+      group_folder: 'dev-team',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects negative interval', () => {
+    const result = IpcTaskSchema.safeParse({
+      type: 'schedule_task',
+      prompt: 'test',
+      schedule_type: 'interval',
+      schedule_value: '-1000',
+      targetJid: 'discord_123',
+      group_folder: 'dev-team',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts valid interval >= 60000', () => {
+    const result = IpcTaskSchema.safeParse({
+      type: 'schedule_task',
+      prompt: 'test',
+      schedule_type: 'interval',
+      schedule_value: '60000',
+      targetJid: 'discord_123',
+      group_folder: 'dev-team',
+    });
+    expect(result.success).toBe(true);
   });
 });
 

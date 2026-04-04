@@ -20,5 +20,6 @@ RUN npx tsc --outDir dist --module Node16 --moduleResolution Node16 --target ES2
 
 WORKDIR /workspace
 RUN chown -R agent:agent /workspace
+RUN chown -R agent:agent /home/agent
 USER agent
 ENTRYPOINT ["node", "/agent-runner/dist/index.js"]

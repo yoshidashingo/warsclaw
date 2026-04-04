@@ -2,7 +2,7 @@
 
 ## Workspace Detection
 **Timestamp**: 2026-03-29T15:28:00Z
-**User Input**: "まずはREADMEと.gitignoreを整備して。MyClawは世界でもっとも小さいOpenClaw,NanoClawクローンです。AI-DLCを活用してリバースエンジニアリングして良い点を取り込み実装します。"
+**User Input**: "まずはREADMEと.gitignoreを整備して。WarsClawは世界でもっとも小さいOpenClaw,NanoClawクローンです。AI-DLCを活用してリバースエンジニアリングして良い点を取り込み実装します。"
 **AI Response**: README.mdと.gitignoreを作成
 **Context**: 初期プロジェクトセットアップ、パーソナルエージェントとして認識
 
@@ -10,7 +10,7 @@
 
 ## User Feedback
 **Timestamp**: 2026-03-29T15:29:00Z
-**User Input**: "MyClaw は、Captain Claw（1997年発売の2Dプラットフォームアクションゲーム）のオープンソース再実装プロジェクトです。は間違い。パーソナルエージェントなので"
+**User Input**: "WarsClaw は、Captain Claw（1997年発売の2Dプラットフォームアクションゲーム）のオープンソース再実装プロジェクトです。は間違い。パーソナルエージェントなので"
 **AI Response**: README.mdを修正、パーソナルエージェントとして正しく記述
 **Context**: ドメイン認識の修正
 
@@ -41,7 +41,7 @@
 
 ## Requirements Analysis - User Answers
 **Timestamp**: 2026-03-29T15:40:00Z
-**User Input**: "Q1:C, Q2:D(MyClawのフォルダ内でclaude codeを実行することで稼働する形にして), Q3:A, Q4:A, Q5:A, Q6:A, Q7:C, Q8:C, Q9:B, Q10:A, Q11:A, Q12:A"
+**User Input**: "Q1:C, Q2:D(WarsClawのフォルダ内でclaude codeを実行することで稼働する形にして), Q3:A, Q4:A, Q5:A, Q6:A, Q7:C, Q8:C, Q9:B, Q10:A, Q11:A, Q12:A"
 **AI Response**: 全12問の回答を記録。矛盾チェック完了（矛盾なし）。要件定義書 requirements.md を生成。Extension Configuration: Security Baseline=Yes, PBT=Yes
 **Context**: AI-DLC Inception Phase - Requirements Analysis Step 7
 
