@@ -153,12 +153,13 @@ export const IpcTaskSchema = z.discriminatedUnion('type', [
     script: z.string().optional(),
     context_mode: z.enum(['group', 'isolated']).default('group'),
   }),
-  z.object({ type: z.literal('pause_task'), taskId: z.string().min(1) }),
-  z.object({ type: z.literal('resume_task'), taskId: z.string().min(1) }),
-  z.object({ type: z.literal('cancel_task'), taskId: z.string().min(1) }),
+  z.object({ type: z.literal('pause_task'), taskId: z.string().min(1), source_group: z.string().min(1) }),
+  z.object({ type: z.literal('resume_task'), taskId: z.string().min(1), source_group: z.string().min(1) }),
+  z.object({ type: z.literal('cancel_task'), taskId: z.string().min(1), source_group: z.string().min(1) }),
   z.object({
     type: z.literal('update_task'),
     taskId: z.string().min(1),
+    source_group: z.string().min(1),
     prompt: z.string().min(1).max(10000).optional(),
     script: z.string().optional(),
     schedule_type: z.enum(['cron', 'interval', 'once']).optional(),
@@ -189,3 +190,16 @@ export const ContainerOutputSchema = z.object({
   newSessionId: z.string().optional(),
   error: z.string().optional(),
 });
+
+// --- Trust / Approval Types ---
+
+export type ApprovalMode = 'required' | 'notify_only' | 'auto';
+
+export interface TaskTrustFields {
+  consecutive_successes: number;
+  total_positive_feedback: number;
+  total_runs: number;
+  trust_score: number;
+  approval_mode: ApprovalMode;
+  approval_mode_locked: boolean;
+}
