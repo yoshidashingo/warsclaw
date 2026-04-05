@@ -45,3 +45,5 @@ ipc/
 *.log
 core
 core.*
+
+.omc/

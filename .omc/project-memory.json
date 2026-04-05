@@ -160,6 +160,199 @@
       ]
     }
   },
-  "hotPaths": [],
+  "hotPaths": [
+    {
+      "path": "src/db.ts",
+      "accessCount": 6,
+      "lastAccessed": 1775343767806,
+      "type": "file"
+    },
+    {
+      "path": "src/types.ts",
+      "accessCount": 5,
+      "lastAccessed": 1775343741164,
+      "type": "file"
+    },
+    {
+      "path": "src/container-runner.ts",
+      "accessCount": 4,
+      "lastAccessed": 1775343776961,
+      "type": "file"
+    },
+    {
+      "path": "src/index.ts",
+      "accessCount": 4,
+      "lastAccessed": 1775343791014,
+      "type": "file"
+    },
+    {
+      "path": "groups/main/action-log.md",
+      "accessCount": 4,
+      "lastAccessed": 1775343855137,
+      "type": "file"
+    },
+    {
+      "path": "groups/main/playbook.md",
+      "accessCount": 4,
+      "lastAccessed": 1775352568993,
+      "type": "file"
+    },
+    {
+      "path": "src/ipc.ts",
+      "accessCount": 3,
+      "lastAccessed": 1775343797877,
+      "type": "file"
+    },
+    {
+      "path": "src/__tests__",
+      "accessCount": 3,
+      "lastAccessed": 1775343825890,
+      "type": "directory"
+    },
+    {
+      "path": "groups/main/knowledge.md",
+      "accessCount": 2,
+      "lastAccessed": 1775342746506,
+      "type": "file"
+    },
+    {
+      "path": "src/config.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775343223057,
+      "type": "file"
+    },
+    {
+      "path": "src/__tests__/db.test.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775343817496,
+      "type": "file"
+    },
+    {
+      "path": "tsconfig.json",
+      "accessCount": 1,
+      "lastAccessed": 1775342633381,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 1,
+      "lastAccessed": 1775342633407,
+      "type": "file"
+    },
+    {
+      "path": "vitest.config.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775342633927,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 1,
+      "lastAccessed": 1775342634055,
+      "type": "file"
+    },
+    {
+      "path": "src/group-queue.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775342639752,
+      "type": "file"
+    },
+    {
+      "path": "src/task-scheduler.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775342643272,
+      "type": "file"
+    },
+    {
+      "path": "src/channels/slack.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775342643650,
+      "type": "file"
+    },
+    {
+      "path": "src/task-lifecycle.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775342644178,
+      "type": "file"
+    },
+    {
+      "path": "container/Dockerfile",
+      "accessCount": 1,
+      "lastAccessed": 1775342647343,
+      "type": "file"
+    },
+    {
+      "path": "docker-compose.yml",
+      "accessCount": 1,
+      "lastAccessed": 1775342647515,
+      "type": "file"
+    },
+    {
+      "path": "src/router.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775342647718,
+      "type": "file"
+    },
+    {
+      "path": "src/logger.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775342647942,
+      "type": "file"
+    },
+    {
+      "path": "src/trust-scorer.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775342648141,
+      "type": "file"
+    },
+    {
+      "path": "src/channels/registry.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775342651217,
+      "type": "file"
+    },
+    {
+      "path": "src/channels/discord.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775342651408,
+      "type": "file"
+    },
+    {
+      "path": "container/agent-runner/package.json",
+      "accessCount": 1,
+      "lastAccessed": 1775342652032,
+      "type": "file"
+    },
+    {
+      "path": "container/agent-runner/src/index.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775342658625,
+      "type": "file"
+    },
+    {
+      "path": "groups/main/retrospective.md",
+      "accessCount": 1,
+      "lastAccessed": 1775342722140,
+      "type": "file"
+    },
+    {
+      "path": "src",
+      "accessCount": 1,
+      "lastAccessed": 1775343217185,
+      "type": "directory"
+    },
+    {
+      "path": ".env.example",
+      "accessCount": 1,
+      "lastAccessed": 1775343990613,
+      "type": "file"
+    },
+    {
+      "path": ".env",
+      "accessCount": 1,
+      "lastAccessed": 1775351147045,
+      "type": "file"
+    }
+  ],
   "userDirectives": []
 }
