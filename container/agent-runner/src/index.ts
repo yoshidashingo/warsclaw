@@ -53,7 +53,13 @@ async function main(): Promise<void> {
   let input: ContainerInput;
   try {
     const raw = await readStdin();
-    input = validateInput(JSON.parse(raw));
+    const parsed = JSON.parse(raw);
+    // Extract API key from stdin envelope (secure: not in docker inspect or args)
+    if (typeof parsed._apiKey === 'string' && parsed._apiKey) {
+      process.env.ANTHROPIC_API_KEY = parsed._apiKey;
+      delete parsed._apiKey;
+    }
+    input = validateInput(parsed);
   } catch (err) {
     writeOutput({ status: 'error', result: '', error: `Invalid input: ${(err as Error).message}` });
     return;
