@@ -139,6 +139,7 @@ export class IpcWatcher {
           is_main: false,
           requires_trigger: true,
           timeout: 300,
+          workspace_dir: task.workspace_dir ?? null,
         });
         mkdirSync(join(this.deps.groupsDir, task.folder), { recursive: true });
         this.deps.logger.info({ folder: task.folder }, 'Group registered via IPC');

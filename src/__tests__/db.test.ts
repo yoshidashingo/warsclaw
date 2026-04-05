@@ -58,7 +58,7 @@ describe('Database', () => {
 
   describe('registered groups', () => {
     it('registers and retrieves groups', () => {
-      db.registerGroup({ name: 'dev', folder: 'dev-team', trigger: '@bot', added_at: '2026-01-01T00:00:00Z', is_main: false, requires_trigger: true, timeout: 300 });
+      db.registerGroup({ name: 'dev', folder: 'dev-team', trigger: '@bot', added_at: '2026-01-01T00:00:00Z', is_main: false, requires_trigger: true, timeout: 300, workspace_dir: null });
       const groups = db.getRegisteredGroups();
       expect(groups).toHaveLength(1);
       expect(groups[0].folder).toBe('dev-team');

@@ -114,6 +114,7 @@ export class Database {
       `ALTER TABLE scheduled_tasks ADD COLUMN total_runs INTEGER NOT NULL DEFAULT 0`,
       `ALTER TABLE scheduled_tasks ADD COLUMN approval_mode TEXT NOT NULL DEFAULT 'required'`,
       `ALTER TABLE scheduled_tasks ADD COLUMN approval_mode_locked INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE registered_groups ADD COLUMN workspace_dir TEXT`,
     ];
     for (const sql of migrations) {
       try { this.db.exec(sql); } catch { /* column already exists */ }
@@ -147,15 +148,15 @@ export class Database {
 
   // --- Registered Groups ---
   getRegisteredGroups(): RegisteredGroup[] {
-    return this.db.prepare(`SELECT name, folder, trigger_word as trigger, added_at, is_main, requires_trigger, timeout FROM registered_groups`)
+    return this.db.prepare(`SELECT name, folder, trigger_word as trigger, added_at, is_main, requires_trigger, timeout, workspace_dir FROM registered_groups`)
       .all()
-      .map((r: any) => ({ ...r, is_main: !!r.is_main, requires_trigger: !!r.requires_trigger })) as RegisteredGroup[];
+      .map((r: any) => ({ ...r, is_main: !!r.is_main, requires_trigger: !!r.requires_trigger, workspace_dir: r.workspace_dir ?? null })) as RegisteredGroup[];
   }
 
   registerGroup(group: RegisteredGroup): void {
-    this.db.prepare(`INSERT OR REPLACE INTO registered_groups (name, folder, trigger_word, added_at, is_main, requires_trigger, timeout)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`)
-      .run(group.name, group.folder, group.trigger, group.added_at, group.is_main ? 1 : 0, group.requires_trigger ? 1 : 0, group.timeout);
+    this.db.prepare(`INSERT OR REPLACE INTO registered_groups (name, folder, trigger_word, added_at, is_main, requires_trigger, timeout, workspace_dir)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(group.name, group.folder, group.trigger, group.added_at, group.is_main ? 1 : 0, group.requires_trigger ? 1 : 0, group.timeout, group.workspace_dir);
   }
 
   // --- Scheduled Tasks ---

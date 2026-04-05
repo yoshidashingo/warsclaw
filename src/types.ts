@@ -48,6 +48,7 @@ export interface ContainerInput {
   assistantName: string;
   script?: string;
   timeout?: number;
+  workspaceDir?: string;
 }
 
 export interface ContainerOutput {
@@ -122,6 +123,7 @@ export interface RegisteredGroup {
   is_main: boolean;
   requires_trigger: boolean;
   timeout: number;
+  workspace_dir: string | null;
 }
 
 // --- IPC Types ---
@@ -184,7 +186,7 @@ export const IpcTaskSchema = z.discriminatedUnion('type', [
     schedule_type: z.enum(['cron', 'interval', 'once']).optional(),
     schedule_value: z.string().min(1).optional(),
   }),
-  z.object({ type: z.literal('register_group'), jid: z.string().min(1), name: z.string().min(1), folder: GroupFolderSchema, trigger: z.string().min(1), source_group: z.string().min(1) }),
+  z.object({ type: z.literal('register_group'), jid: z.string().min(1), name: z.string().min(1), folder: GroupFolderSchema, trigger: z.string().min(1), source_group: z.string().min(1), workspace_dir: z.string().optional() }),
   z.object({ type: z.literal('refresh_groups'), source_group: z.string().min(1) }),
 ]).superRefine((data, ctx) => {
   if (data.type === 'schedule_task') {

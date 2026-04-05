@@ -95,6 +95,7 @@ async function main(): Promise<void> {
       is_main: true,
       requires_trigger: false,
       timeout: 300,
+      workspace_dir: null,
     });
   }
 
@@ -199,6 +200,7 @@ async function main(): Promise<void> {
           isScheduledTask: false,
           assistantName: config.assistantName,
           timeout: group.timeout,
+          workspaceDir: group.workspace_dir ?? undefined,
         },
         onComplete: async (output) => {
           if (output.newSessionId) db.saveSession(group.folder, output.newSessionId);

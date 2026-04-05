@@ -62,8 +62,10 @@ export class ContainerRunner {
       '--env-file', envFile,
     ];
 
-    if (this.config.workspaceDir) {
-      args.push('-v', `${this.config.workspaceDir}:/workspace/repo:rw`);
+    // Group-level workspace_dir takes precedence over global config
+    const workspaceDir = input.workspaceDir ?? this.config.workspaceDir;
+    if (workspaceDir) {
+      args.push('-v', `${workspaceDir}:/workspace/repo:rw`);
     }
 
     args.push('-i', this.config.dockerImage);
