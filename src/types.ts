@@ -11,6 +11,7 @@ export interface NewMessage {
   timestamp: number;
   is_from_me: boolean;
   is_bot_message: boolean;
+  is_dm: boolean;
 }
 
 // --- Channel Types ---

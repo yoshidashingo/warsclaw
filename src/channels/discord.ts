@@ -25,6 +25,7 @@ export function createDiscordChannel(opts: ChannelOpts): Channel | null {
       timestamp: msg.createdTimestamp,
       is_from_me: msg.author.id === botUserId,
       is_bot_message: msg.author.id === botUserId,
+      is_dm: msg.channel.isDMBased(),
     });
   };
 

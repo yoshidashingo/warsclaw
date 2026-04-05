@@ -159,13 +159,13 @@ async function main(): Promise<void> {
   groups = db.getRegisteredGroups();
   for (const channel of registry.getAll()) {
     channel.onInboundMessage((msg: NewMessage) => {
-      logger.debug({ chatJid: msg.chat_jid, sender: msg.sender, is_from_me: msg.is_from_me }, `Inbound message: ${msg.content.slice(0, 80)}`);
+      logger.debug({ chatJid: msg.chat_jid, sender: msg.sender, is_from_me: msg.is_from_me, is_dm: msg.is_dm }, `Inbound message: ${msg.content.slice(0, 80)}`);
       db.storeMessage(msg);
 
-      // Find matching group
+      // Find matching group — DMs always route to main group without trigger
       const group = groups.find((g) => {
         if (!channel.ownsJid(msg.chat_jid)) return false;
-        // Check trigger
+        if (msg.is_dm) return g.is_main;
         if (g.requires_trigger && !msg.content.includes(g.trigger)) return false;
         return true;
       });

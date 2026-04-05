@@ -132,7 +132,7 @@ export class Database {
       is_from_me as is_from_me, is_bot_message as is_bot_message
       FROM messages WHERE chat_jid = ? AND timestamp > ? ORDER BY timestamp ASC LIMIT ?`)
       .all(chatJid, since, limit)
-      .map((r: any) => ({ ...r, is_from_me: !!r.is_from_me, is_bot_message: !!r.is_bot_message })) as NewMessage[];
+      .map((r: any) => ({ ...r, is_from_me: !!r.is_from_me, is_bot_message: !!r.is_bot_message, is_dm: false })) as NewMessage[];
   }
 
   getLastBotMessageTimestamp(chatJid: string): number | null {

@@ -3,6 +3,8 @@ import type { Channel, ChannelOpts, NewMessage } from '../types.js';
 
 export interface SlackChannel extends Channel {
   getApp(): import('@slack/bolt').App;
+  openDm(userId: string): Promise<string>;
+  sendDm(userId: string, text: string): Promise<void>;
 }
 
 export function createSlackChannel(opts: ChannelOpts): SlackChannel | null {
@@ -20,7 +22,8 @@ export function createSlackChannel(opts: ChannelOpts): SlackChannel | null {
     if (!('text' in message) || !('user' in message)) return;
     if (message.subtype) return;
 
-    const msg = message as { text: string; user: string; ts: string; channel: string };
+    const msg = message as { text: string; user: string; ts: string; channel: string; channel_type?: string };
+    const isDm = msg.channel_type === 'im' || msg.channel.startsWith('D');
     messageCallback({
       id: msg.ts,
       chat_jid: `slack_${msg.channel}`,
@@ -30,6 +33,7 @@ export function createSlackChannel(opts: ChannelOpts): SlackChannel | null {
       timestamp: Math.floor(parseFloat(msg.ts) * 1000),
       is_from_me: msg.user === botUserId,
       is_bot_message: msg.user === botUserId,
+      is_dm: isDm,
     });
   });
 
@@ -62,6 +66,18 @@ export function createSlackChannel(opts: ChannelOpts): SlackChannel | null {
 
     onInboundMessage(callback: (msg: NewMessage) => void) {
       messageCallback = callback;
+    },
+
+    async openDm(userId: string): Promise<string> {
+      const res = await app.client.conversations.open({ token: botToken, users: userId });
+      return res.channel!.id!;
+    },
+
+    async sendDm(userId: string, text: string): Promise<void> {
+      const dmChannelId = await this.openDm(userId);
+      for (let i = 0; i < text.length; i += 4000) {
+        await app.client.chat.postMessage({ token: botToken, channel: dmChannelId, text: text.slice(i, i + 4000) });
+      }
     },
 
     getApp: () => app,

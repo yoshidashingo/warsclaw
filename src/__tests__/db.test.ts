@@ -31,8 +31,8 @@ describe('Database', () => {
 
   describe('messages', () => {
     it('stores and retrieves messages', () => {
-      db.storeMessage({ id: 'm1', chat_jid: 'g1', sender: 'u1', sender_name: 'User', content: 'hello', timestamp: 1000, is_from_me: false, is_bot_message: false });
-      db.storeMessage({ id: 'm2', chat_jid: 'g1', sender: 'bot', sender_name: 'Bot', content: 'hi', timestamp: 2000, is_from_me: true, is_bot_message: true });
+      db.storeMessage({ id: 'm1', chat_jid: 'g1', sender: 'u1', sender_name: 'User', content: 'hello', timestamp: 1000, is_from_me: false, is_bot_message: false, is_dm: false });
+      db.storeMessage({ id: 'm2', chat_jid: 'g1', sender: 'bot', sender_name: 'Bot', content: 'hi', timestamp: 2000, is_from_me: true, is_bot_message: true, is_dm: false });
 
       const msgs = db.getNewMessages('g1', 0);
       expect(msgs).toHaveLength(2);
@@ -41,8 +41,8 @@ describe('Database', () => {
     });
 
     it('respects since parameter', () => {
-      db.storeMessage({ id: 'm1', chat_jid: 'g1', sender: 'u1', sender_name: 'User', content: 'old', timestamp: 1000, is_from_me: false, is_bot_message: false });
-      db.storeMessage({ id: 'm2', chat_jid: 'g1', sender: 'u1', sender_name: 'User', content: 'new', timestamp: 2000, is_from_me: false, is_bot_message: false });
+      db.storeMessage({ id: 'm1', chat_jid: 'g1', sender: 'u1', sender_name: 'User', content: 'old', timestamp: 1000, is_from_me: false, is_bot_message: false, is_dm: false });
+      db.storeMessage({ id: 'm2', chat_jid: 'g1', sender: 'u1', sender_name: 'User', content: 'new', timestamp: 2000, is_from_me: false, is_bot_message: false, is_dm: false });
 
       const msgs = db.getNewMessages('g1', 1500);
       expect(msgs).toHaveLength(1);
@@ -50,7 +50,7 @@ describe('Database', () => {
     });
 
     it('returns last bot message timestamp', () => {
-      db.storeMessage({ id: 'm1', chat_jid: 'g1', sender: 'bot', sender_name: 'Bot', content: 'hi', timestamp: 5000, is_from_me: true, is_bot_message: true });
+      db.storeMessage({ id: 'm1', chat_jid: 'g1', sender: 'bot', sender_name: 'Bot', content: 'hi', timestamp: 5000, is_from_me: true, is_bot_message: true, is_dm: false });
       expect(db.getLastBotMessageTimestamp('g1')).toBe(5000);
       expect(db.getLastBotMessageTimestamp('g2')).toBeNull();
     });
