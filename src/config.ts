@@ -33,7 +33,15 @@ export class Config {
     this.dockerImage = env.WARSCLAW_DOCKER_IMAGE ?? 'warsclaw-agent';
     this.assistantName = env.WARSCLAW_ASSISTANT_NAME ?? 'WarsClaw';
     this.logLevel = env.WARSCLAW_LOG_LEVEL ?? 'info';
-    this.workspaceDir = env.WARSCLAW_WORKSPACE_DIR ? resolve(env.WARSCLAW_WORKSPACE_DIR) : undefined;
+    if (env.WARSCLAW_WORKSPACE_DIR) {
+      const rawWs = env.WARSCLAW_WORKSPACE_DIR;
+      if (rawWs.includes('..') || !rawWs.startsWith('/')) {
+        throw new Error(`WARSCLAW_WORKSPACE_DIR must be an absolute path without "..": ${rawWs}`);
+      }
+      this.workspaceDir = resolve(rawWs);
+    } else {
+      this.workspaceDir = undefined;
+    }
     this.discordBotToken = env.DISCORD_BOT_TOKEN || undefined;
     this.slackBotToken = env.SLACK_BOT_TOKEN || undefined;
     this.slackAppToken = env.SLACK_APP_TOKEN || undefined;

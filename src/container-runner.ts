@@ -56,11 +56,11 @@ export class ContainerRunner {
     // Group-level workspace_dir takes precedence over global config
     const workspaceDir = input.workspaceDir ?? this.config.workspaceDir;
     if (workspaceDir) {
-      const resolvedWs = resolve(workspaceDir);
-      if (resolvedWs.includes('..') || !resolvedWs.startsWith('/')) {
-        throw new Error(`Invalid workspace_dir: ${resolvedWs}`);
+      // Validate raw string before resolve() normalizes away traversal
+      if (workspaceDir.includes('..') || !workspaceDir.startsWith('/')) {
+        throw new Error(`Invalid workspace_dir: ${workspaceDir}`);
       }
-      args.push('-v', `${resolvedWs}:/workspace/repo:rw`);
+      args.push('-v', `${resolve(workspaceDir)}:/workspace/repo:rw`);
     }
 
     args.push('-i', this.config.dockerImage);
