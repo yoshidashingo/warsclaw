@@ -73,6 +73,11 @@ export class IpcWatcher {
 
     switch (task.type) {
       case 'schedule_task':
+        // Only main group or the same group can schedule tasks
+        if (!this.isFromMainGroup(task) && task.source_group !== task.group_folder) {
+          this.deps.logger.warn({ source_group: task.source_group, group_folder: task.group_folder }, 'Unauthorized schedule_task — source_group does not match target group');
+          break;
+        }
         this.deps.scheduler.createTask({
           id: randomUUID(),
           group_folder: task.group_folder,

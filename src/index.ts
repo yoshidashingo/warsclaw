@@ -1,4 +1,5 @@
 import { mkdirSync, chmodSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { Config } from './config.js';
 import { Logger } from './logger.js';
 import { Database } from './db.js';
@@ -28,6 +29,13 @@ async function main(): Promise<void> {
   // Ensure directories
   for (const dir of [config.dataDir, config.groupsDir, config.ipcDir]) {
     mkdirSync(dir, { recursive: true, mode: 0o700 });
+  }
+
+  // Security: prevent ipcDir and groupsDir from overlapping
+  const resolvedIpc = resolve(config.ipcDir);
+  const resolvedGroups = resolve(config.groupsDir);
+  if (resolvedIpc.startsWith(resolvedGroups + '/') || resolvedGroups.startsWith(resolvedIpc + '/') || resolvedIpc === resolvedGroups) {
+    throw new Error(`ipcDir (${resolvedIpc}) and groupsDir (${resolvedGroups}) must not overlap`);
   }
 
   const db = new Database(config.dbPath);

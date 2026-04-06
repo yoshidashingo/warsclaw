@@ -105,8 +105,13 @@ export class TaskScheduler {
   computeNextRun(task: Pick<ScheduledTask, 'schedule_type' | 'schedule_value' | 'last_run'>): string | null {
     switch (task.schedule_type) {
       case 'cron': {
-        const interval = CronExpressionParser.parse(task.schedule_value, { tz: this.timezone });
-        return interval.next().toISOString();
+        try {
+          const interval = CronExpressionParser.parse(task.schedule_value, { tz: this.timezone });
+          return interval.next().toISOString();
+        } catch {
+          this.logger.error({ scheduleValue: task.schedule_value }, 'Invalid cron expression, skipping');
+          return null;
+        }
       }
       case 'interval': {
         const ms = parseInt(task.schedule_value, 10);
