@@ -62,6 +62,7 @@ describe('IpcTaskSchema', () => {
   it('accepts schedule_task', () => {
     const result = IpcTaskSchema.safeParse({
       type: 'schedule_task',
+      source_group: 'dev-team',
       prompt: 'test',
       schedule_type: 'cron',
       schedule_value: '* * * * *',
@@ -97,6 +98,7 @@ describe('IpcTaskSchema', () => {
   it('rejects interval < 60000', () => {
     const result = IpcTaskSchema.safeParse({
       type: 'schedule_task',
+      source_group: 'dev-team',
       prompt: 'test',
       schedule_type: 'interval',
       schedule_value: '0',
@@ -109,6 +111,7 @@ describe('IpcTaskSchema', () => {
   it('rejects negative interval', () => {
     const result = IpcTaskSchema.safeParse({
       type: 'schedule_task',
+      source_group: 'dev-team',
       prompt: 'test',
       schedule_type: 'interval',
       schedule_value: '-1000',
@@ -121,6 +124,7 @@ describe('IpcTaskSchema', () => {
   it('accepts valid interval >= 60000', () => {
     const result = IpcTaskSchema.safeParse({
       type: 'schedule_task',
+      source_group: 'dev-team',
       prompt: 'test',
       schedule_type: 'interval',
       schedule_value: '60000',

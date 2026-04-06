@@ -1,5 +1,5 @@
-const OUTPUT_START = '<<<OUTPUT_START>>>';
-const OUTPUT_END = '<<<OUTPUT_END>>>';
+// Output markers use a per-invocation nonce to prevent LLM output spoofing
+let outputNonce: string | undefined;
 
 interface ContainerInput {
   prompt: string;
@@ -46,14 +46,27 @@ function readStdin(): Promise<string> {
 }
 
 function writeOutput(output: ContainerOutput): void {
-  process.stdout.write(`\n${OUTPUT_START}\n${JSON.stringify(output)}\n${OUTPUT_END}\n`);
+  const start = outputNonce ? `<<<OUTPUT_START:${outputNonce}>>>` : '<<<OUTPUT_START>>>';
+  const end = outputNonce ? `<<<OUTPUT_END:${outputNonce}>>>` : '<<<OUTPUT_END>>>';
+  process.stdout.write(`\n${start}\n${JSON.stringify(output)}\n${end}\n`);
 }
 
 async function main(): Promise<void> {
   let input: ContainerInput;
+  let apiKey: string | undefined;
   try {
     const raw = await readStdin();
-    input = validateInput(JSON.parse(raw));
+    const parsed = JSON.parse(raw);
+    // Extract API key and nonce from stdin envelope (secure: not in docker inspect or args)
+    if (typeof parsed._apiKey === 'string' && parsed._apiKey) {
+      apiKey = parsed._apiKey;
+      delete parsed._apiKey;
+    }
+    if (typeof parsed._nonce === 'string' && parsed._nonce) {
+      outputNonce = parsed._nonce;
+      delete parsed._nonce;
+    }
+    input = validateInput(parsed);
   } catch (err) {
     writeOutput({ status: 'error', result: '', error: `Invalid input: ${(err as Error).message}` });
     return;
@@ -75,12 +88,16 @@ async function main(): Promise<void> {
       ? `Execute this script:\n${input.script}\n\nContext:\n${input.prompt}`
       : input.prompt;
 
+    // Pass API key only to the direct child — not via process.env
+    const childEnv: Record<string, string> = { HOME: '/home/agent' };
+    if (apiKey) childEnv.ANTHROPIC_API_KEY = apiKey;
+
     const result = spawnSync('claude', args, {
       cwd: workDir,
       encoding: 'utf-8',
       timeout: (input.timeout ?? 300) * 1000,
       input: prompt,
-      env: { ...process.env, HOME: '/home/agent' },
+      env: childEnv,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 

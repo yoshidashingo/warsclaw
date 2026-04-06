@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CronExpressionParser } from 'cron-parser';
 
 // --- Message Types ---
 
@@ -167,12 +168,13 @@ export const IpcMessageSchema = z.object({
 export const IpcTaskSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('schedule_task'),
+    source_group: z.string().min(1),
     prompt: z.string().min(1).max(10000),
     schedule_type: z.enum(['cron', 'interval', 'once']),
     schedule_value: z.string().min(1),
     targetJid: z.string().min(1),
     group_folder: GroupFolderSchema,
-    script: z.string().optional(),
+    script: z.string().max(50000).optional(),
     context_mode: z.enum(['group', 'isolated']).default('group'),
   }),
   z.object({ type: z.literal('pause_task'), taskId: z.string().min(1), source_group: z.string().min(1) }),
@@ -187,10 +189,17 @@ export const IpcTaskSchema = z.discriminatedUnion('type', [
     schedule_type: z.enum(['cron', 'interval', 'once']).optional(),
     schedule_value: z.string().min(1).optional(),
   }),
-  z.object({ type: z.literal('register_group'), jid: z.string().min(1), name: z.string().min(1), folder: GroupFolderSchema, trigger: z.string().min(1), source_group: z.string().min(1), workspace_dir: z.string().optional() }),
+  z.object({ type: z.literal('register_group'), jid: z.string().min(1), name: z.string().min(1), folder: GroupFolderSchema, trigger: z.string().min(1), source_group: z.string().min(1), workspace_dir: z.string().refine((p) => !p.includes('..') && p.startsWith('/'), 'workspace_dir must be an absolute path without ..').optional() }),
   z.object({ type: z.literal('refresh_groups'), source_group: z.string().min(1) }),
 ]).superRefine((data, ctx) => {
   if (data.type === 'schedule_task') {
+    if (data.schedule_type === 'cron') {
+      try {
+        CronExpressionParser.parse(data.schedule_value);
+      } catch {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Invalid cron expression', path: ['schedule_value'] });
+      }
+    }
     if (data.schedule_type === 'interval') {
       const ms = parseInt(data.schedule_value, 10);
       if (isNaN(ms) || ms < 60000) {

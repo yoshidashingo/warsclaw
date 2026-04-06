@@ -1,22 +1,22 @@
 import { spawn } from 'node:child_process';
-import { resolve, join } from 'node:path';
+import { resolve } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import type { Config } from './config.js';
 import type { Logger } from './logger.js';
 import type { ContainerInput, ContainerOutput } from './types.js';
 import { ContainerOutputSchema, SafeFolderSchema } from './types.js';
 
-const OUTPUT_START = '<<<OUTPUT_START>>>';
-const OUTPUT_END = '<<<OUTPUT_END>>>';
-
 export const MAX_OUTPUT_BYTES = 10 * 1024 * 1024; // 10MB
 
-export function parseContainerOutput(stdout: string): ContainerOutput {
-  const startIdx = stdout.indexOf(OUTPUT_START);
-  const endIdx = stdout.indexOf(OUTPUT_END);
+export function parseContainerOutput(stdout: string, nonce?: string): ContainerOutput {
+  const startMarker = nonce ? `<<<OUTPUT_START:${nonce}>>>` : '<<<OUTPUT_START>>>';
+  const endMarker = nonce ? `<<<OUTPUT_END:${nonce}>>>` : '<<<OUTPUT_END>>>';
+  const startIdx = stdout.lastIndexOf(startMarker);
+  const endIdx = stdout.indexOf(endMarker, startIdx);
   if (startIdx === -1 || endIdx === -1) {
     throw new Error(`Missing output markers in stdout (length=${stdout.length})`);
   }
-  const json = stdout.slice(startIdx + OUTPUT_START.length, endIdx).trim();
+  const json = stdout.slice(startIdx + startMarker.length, endIdx).trim();
   return ContainerOutputSchema.parse(JSON.parse(json));
 }
 
@@ -37,13 +37,6 @@ export class ContainerRunner {
     const groupFolder = resolve(this.config.groupsDir, input.groupFolder);
     const ipcDir = resolve(this.config.ipcDir);
 
-    // Write API key to temp env-file (not visible in docker inspect)
-    const { mkdtempSync, writeFileSync, unlinkSync: unlinkTmp, rmdirSync } = await import('node:fs');
-    const { tmpdir } = await import('node:os');
-    const envDir = mkdtempSync(join(tmpdir(), 'warsclaw-env-'));
-    const envFile = join(envDir, '.env');
-    writeFileSync(envFile, `ANTHROPIC_API_KEY=${this.config.anthropicApiKey}\n`, { mode: 0o600 });
-
     const timeoutSec = input.timeout ?? (input.isScheduledTask ? 600 : 300);
 
     const args = [
@@ -58,30 +51,22 @@ export class ContainerRunner {
       // Volumes: only group folder (rw), IPC (ro)
       '-v', `${groupFolder}:/workspace/groups/${input.groupFolder}:rw`,
       '-v', `${ipcDir}:/workspace/ipc:ro`,
-      // API key via env-file
-      '--env-file', envFile,
     ];
 
     // Group-level workspace_dir takes precedence over global config
     const workspaceDir = input.workspaceDir ?? this.config.workspaceDir;
     if (workspaceDir) {
-      args.push('-v', `${workspaceDir}:/workspace/repo:rw`);
+      // Validate raw string before resolve() normalizes away traversal
+      if (workspaceDir.includes('..') || !workspaceDir.startsWith('/')) {
+        throw new Error(`Invalid workspace_dir: ${workspaceDir}`);
+      }
+      args.push('-v', `${resolve(workspaceDir)}:/workspace/repo:rw`);
     }
 
     args.push('-i', this.config.dockerImage);
 
-    const cleanupEnv = (): void => {
-      try { unlinkTmp(envFile); } catch { /* ignore */ }
-      try { rmdirSync(envDir); } catch { /* ignore */ }
-    };
-
-    let proc: ReturnType<typeof spawn>;
-    try {
-      proc = spawn('docker', args, { stdio: ['pipe', 'pipe', 'pipe'] });
-    } catch (err) {
-      cleanupEnv();
-      throw err;
-    }
+    const nonce = randomUUID();
+    const proc = spawn('docker', args, { stdio: ['pipe', 'pipe', 'pipe'] });
 
     return new Promise<ContainerOutput>((resolveP, reject) => {
       this.activeProcesses.set(input.groupFolder, proc);
@@ -125,7 +110,6 @@ export class ContainerRunner {
       const cleanup = (): void => {
         clearTimeout(timeout);
         this.activeProcesses.delete(input.groupFolder);
-        cleanupEnv();
       };
 
       proc.on('close', (code) => {
@@ -136,7 +120,7 @@ export class ContainerRunner {
           return;
         }
         try {
-          resolveP(parseContainerOutput(stdout));
+          resolveP(parseContainerOutput(stdout, nonce));
         } catch (err) {
           reject(new Error(`Failed to parse container output: ${(err as Error).message}`));
         }
@@ -147,7 +131,9 @@ export class ContainerRunner {
         reject(err);
       });
 
-      proc.stdin?.write(JSON.stringify(input));
+      // Pass API key and nonce via stdin (not visible in docker inspect or process list)
+      const envelope = { ...input, _apiKey: this.config.anthropicApiKey, _nonce: nonce };
+      proc.stdin?.write(JSON.stringify(envelope));
       proc.stdin?.end();
     });
   }
